@@ -1,3 +1,5 @@
+// 📁 server.js
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -56,7 +58,7 @@ app.get('/', (req, res) => {
           </div>
           <div class="back">
             <p><strong>태그:</strong> ${photo.tags || '없음'}</p>
-            <p><strong>업로드:</strong> ${new Date(photo.upload_time).toLocaleString('ko-KR')}</p>
+            <p><strong>업로드:</strong> ${new Date(photo.upload_time).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p>
           </div>
         </div>
       </div>
@@ -139,7 +141,7 @@ app.post('/upload', upload.single('photo'), (req, res) => {
   const rawTags = req.body.tags;
   const tags = Array.isArray(rawTags) ? rawTags.join(', ') : rawTags || '';
   const filepath = `/pics/${file.filename}`;
-  const uploadTime = new Date().toISOString();
+  const uploadTime = new Date().toISOString(); // UTC 저장은 OK
 
   logToFile(`업로드됨: ${filepath} | 태그: ${tags}`);
 
