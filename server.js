@@ -59,10 +59,10 @@ app.get("/", (req, res) => {
             <a href="${photo.filepath}" download class="download-btn">⬇</a>
           </div>
           <div class="back">
-            <p><strong>태그:</strong> ${photo.tags || "없음"}</p>
-            <p><strong>업로드:</strong> ${new Date(
-              photo.upload_time
-            ).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
+            <p>태그: ${photo.tags || "없음"}</p>
+            <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
+              timeZone: "Asia/Seoul",
+            })}</p>
           </div>
         </div>
       </div>
@@ -85,6 +85,9 @@ app.get("/", (req, res) => {
             <a href="/upload" class="upload-box">+</a>
             ${images}
           </div>
+          <p style="text-align:center; font-size:13px; color:#666; margin-top:40px;">
+            문의는 @현서내꼬
+          </p>
         </div>
 
         <script>
@@ -151,7 +154,7 @@ app.post("/upload", upload.single("photo"), (req, res) => {
   const rawTags = req.body.tags;
   const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
   const filepath = `/pics/${file.filename}`;
-  const uploadTime = new Date().toISOString(); // UTC 저장은 OK
+  const uploadTime = new Date().toISOString();
 
   logToFile(`업로드됨: ${filepath} | 태그: ${tags}`);
 
