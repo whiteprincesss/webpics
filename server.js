@@ -1,26 +1,26 @@
 // 📁 server.js
 
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const crypto = require('crypto');
-const fs = require('fs');
-const sqlite3 = require('sqlite3').verbose();
+const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const crypto = require("crypto");
+const fs = require("fs");
+const sqlite3 = require("sqlite3").verbose();
 
 const app = express();
 const port = 3000;
 
-app.use(express.static('public'));
-app.use(express.static('.'));
+app.use(express.static("public"));
+app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 
 function logToFile(text) {
   const now = new Date().toISOString();
   const logLine = `[${now}] ${text}\n`;
-  fs.appendFileSync('server.log', logLine);
+  fs.appendFileSync("server.log", logLine);
 }
 
-const db = new sqlite3.Database('./photos.db');
+const db = new sqlite3.Database("./photos.db");
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS photos (
@@ -34,22 +34,24 @@ db.serialize(() => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/pics');
+    cb(null, "public/pics");
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const base = file.originalname + Date.now();
-    const hash = crypto.createHash('md5').update(base).digest('hex');
+    const hash = crypto.createHash("md5").update(base).digest("hex");
     cb(null, `${hash}${ext}`);
-  }
+  },
 });
 const upload = multer({ storage });
 
-app.get('/', (req, res) => {
-  db.all('SELECT * FROM photos ORDER BY id DESC', (err, rows) => {
-    if (err) return res.send('DB 오류 발생');
+app.get("/", (req, res) => {
+  db.all("SELECT * FROM photos ORDER BY id DESC", (err, rows) => {
+    if (err) return res.send("DB 오류 발생");
 
-    const images = rows.map(photo => `
+    const images = rows
+      .map(
+        (photo) => `
       <div class="photo-card">
         <div class="card-inner">
           <div class="front">
@@ -57,12 +59,16 @@ app.get('/', (req, res) => {
             <a href="${photo.filepath}" download class="download-btn">⬇</a>
           </div>
           <div class="back">
-            <p><strong>태그:</strong> ${photo.tags || '없음'}</p>
-            <p><strong>업로드:</strong> ${new Date(photo.upload_time).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p>
+            <p><strong>태그:</strong> ${photo.tags || "없음"}</p>
+            <p><strong>업로드:</strong> ${new Date(
+              photo.upload_time
+            ).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
           </div>
         </div>
       </div>
-    `).join('\n');
+    `
+      )
+      .join("\n");
 
     const html = `
       <!DOCTYPE html>
@@ -97,17 +103,21 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/upload', (req, res) => {
-  const tagsFile = path.join(__dirname, 'tags.json');
-  fs.readFile(tagsFile, 'utf-8', (err, data) => {
-    if (err) return res.send('태그를 불러오는 데 실패했습니다.');
+app.get("/upload", (req, res) => {
+  const tagsFile = path.join(__dirname, "tags.json");
+  fs.readFile(tagsFile, "utf-8", (err, data) => {
+    if (err) return res.send("태그를 불러오는 데 실패했습니다.");
 
     const tags = JSON.parse(data);
-    const checkboxes = tags.map(tag => `
+    const checkboxes = tags
+      .map(
+        (tag) => `
       <label style="margin-right: 12px;">
         <input type="checkbox" name="tags" value="${tag}"> ${tag}
       </label>
-    `).join('\n');
+    `
+      )
+      .join("\n");
 
     const html = `
       <!DOCTYPE html>
@@ -136,24 +146,24 @@ app.get('/upload', (req, res) => {
   });
 });
 
-app.post('/upload', upload.single('photo'), (req, res) => {
+app.post("/upload", upload.single("photo"), (req, res) => {
   const file = req.file;
   const rawTags = req.body.tags;
-  const tags = Array.isArray(rawTags) ? rawTags.join(', ') : rawTags || '';
+  const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
   const filepath = `/pics/${file.filename}`;
   const uploadTime = new Date().toISOString(); // UTC 저장은 OK
 
   logToFile(`업로드됨: ${filepath} | 태그: ${tags}`);
 
   db.run(
-    'INSERT INTO photos (filepath, tags, upload_time) VALUES (?, ?, ?)',
+    "INSERT INTO photos (filepath, tags, upload_time) VALUES (?, ?, ?)",
     [filepath, tags, uploadTime],
     (err) => {
       if (err) {
-        console.error('DB 오류:', err);
-        return res.send('DB 오류 발생!');
+        console.error("DB 오류:", err);
+        return res.send("DB 오류 발생!");
       }
-      res.redirect('/');
+      res.redirect("/");
     }
   );
 });
