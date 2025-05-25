@@ -42,11 +42,10 @@ app.get("/", async (req, res) => {
   const rows = snapshot.docs.map(doc => doc.data());
 
   const images = rows.map(photo => `
-    <div class="photo-card">
+    <div class="photo-card" onclick="openLightbox('${photo.filepath}')">
       <div class="card-inner">
         <div class="front">
           <img src="${photo.filepath}" alt="사진">
-          <a href="${photo.filepath}" download class="download-btn">⬇</a>
         </div>
         <div class="back">
           <p>태그: ${photo.tags || "없음"}</p>
@@ -67,6 +66,13 @@ app.get("/", async (req, res) => {
       <link rel="stylesheet" href="/style.css">
     </head>
     <body>
+      <div class="navbar">
+        <div class="menu-icon" onclick="toggleMenu()">☰</div>
+        <div id="menu-panel" class="hidden">
+          <button onclick="showLogin()">로그인</button>
+          <button onclick="showSignup()">회원가입</button>
+        </div>
+      </div>
       <div class="container">
         <h1>📸 WebPics 사진 아카이브</h1>
         <div class="gallery">
@@ -77,78 +83,49 @@ app.get("/", async (req, res) => {
           문의는 @현서내꼬
         </p>
       </div>
+
+      <div id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="확대된 이미지">
+        <a id="download-btn" href="#" download>⬇ 다운로드</a>
+      </div>
+
       <script>
-        document.addEventListener("DOMContentLoaded", () => {
-          document.querySelectorAll(".photo-card").forEach(card => {
-            card.addEventListener("click", () => {
-              card.classList.toggle("flipped");
-            });
-          });
-        });
+        function toggleMenu() {
+          document.getElementById("menu-panel").classList.toggle("show");
+        }
+        function showLogin() {
+          alert("🧑 로그인 모달 띄우기!");
+        }
+        function showSignup() {
+          alert("🆕 회원가입 모달 띄우기!");
+        }
+
+        function openLightbox(url) {
+          const img = document.getElementById("lightbox-img");
+          const download = document.getElementById("download-btn");
+
+          img.src = url;
+
+          const parts = url.split("/upload/");
+          const base = parts[0];
+          const rest = parts[1];
+
+          // 다운로드 URL 올바르게 구성
+          const dlUrl = base + "/upload/fl_attachment/" + rest;
+
+          download.href = dlUrl;
+          download.download = rest.split("/").pop(); // 파일명만 추출
+          document.getElementById("lightbox").classList.add("show");
+        }
+
+        function closeLightbox() {
+          document.getElementById("lightbox").classList.remove("show");
+        }
       </script>
     </body>
     </html>
   `;
   res.send(html);
-});
-
-app.get("/upload", (req, res) => {
-  const tagsFile = path.join(__dirname, "tags.json");
-  fs.readFile(tagsFile, "utf-8", (err, data) => {
-    if (err) return res.send("태그를 불러오는 데 실패했습니다.");
-    const tags = JSON.parse(data);
-    const checkboxes = `
-      <div class="tag-list">
-        ${tags.map(tag => `
-          <label>
-            <input type="checkbox" name="tags" value="${tag}"> ${tag}
-          </label>
-        `).join("\n")}
-      </div>
-    `;
-    const html = `
-      <!DOCTYPE html>
-      <html lang="ko">
-      <head>
-        <meta charset="UTF-8">
-        <title>사진 업로드</title>
-        <link rel="stylesheet" href="/style.css">
-      </head>
-      <body>
-        <div class="container">
-          <h1>📤 사진 업로드</h1>
-          <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="photo" accept="image/*" required>
-            ${checkboxes}
-            <div class="upload-footer">
-              <button type="submit">업로드</button>
-            </div>
-          </form>
-          <a href="/">← 메인으로 돌아가기</a>
-        </div>
-      </body>
-      </html>
-    `;
-    res.send(html);
-  });
-});
-
-app.post("/upload", upload.single("photo"), async (req, res) => {
-  const file = req.file;
-  const rawTags = req.body.tags;
-  const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
-  const filepath = file.path;
-  const uploadTime = new Date().toISOString();
-
-  console.log("✅ Firestore 저장:", filepath);
-
-  await firestore.collection("photos").add({
-    filepath,
-    tags,
-    upload_time: uploadTime
-  });
-
-  res.redirect("/");
 });
 
 app.listen(port, () => {
