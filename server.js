@@ -43,12 +43,21 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
   const { uid, nickname, tags } = req.body;
   const uploadTime = new Date().toISOString();
   const files = req.files;
-  if (!files || !Array.isArray(files)) return res.status(400).send("파일이 업로드되지 않았습니다.");
 
+  if (!files || !Array.isArray(files)) {
+    return res.status(400).send("❌ 파일이 업로드되지 않았습니다.");
+  }
+
+  // ✅ 여기에 추가!
+  const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   for (const file of files) {
+    if (!allowedTypes.includes(file.mimetype)) {
+      return res.status(400).send("❌ 이미지 파일(jpg, png, gif, webp)만 업로드할 수 있습니다.");
+    }
+
     await firestore.collection("photos").add({
-      filepath: file.path,
-      tags: tags || "",
+      filepath: file?.path || file?.secure_url || file?.url || "",
+      tags,
       upload_time: uploadTime,
       upload_by: uid,
       uploader_nickname: nickname
@@ -71,7 +80,7 @@ app.get("/", async (req, res) => {
   `).join("\n");
 
   const images = rows.map(photo => `
-    <div class="photo-card" data-tags="${photo.tags || ''}" data-doc-id="${photo.id}" data-filepath="${photo.filepath}" onclick="openLightbox('${photo.filepath}')">
+    <div class="photo-card" data-tags="${photo.tags || ''}" data-doc-id="${photo.id}" data-filepath="${photo.filepath}" onclick="openLightbox('${photo.filepath}', '${photo.id}')">
       <div class="card-inner">
         <div class="front"><img src="${photo.filepath}" alt="사진"></div>
         <div class="back">
@@ -92,6 +101,7 @@ app.get("/", async (req, res) => {
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+      <script src="/lightbox_admin.js"></script>
       <script>
         const firebaseConfig = {
           apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
@@ -127,22 +137,48 @@ app.get("/", async (req, res) => {
       <div id="lightbox" onclick="closeLightbox()">
         <img id="lightbox-img" src="" alt="확대된 이미지">
         <a id="download-btn" href="#" download>⬇ 다운로드</a>
+        <button id="delete-btn" style="display:none;">🗑 삭제</button>
       </div>
       <script>
         function toggleMenu() {
           document.getElementById("menu-panel").classList.toggle("show");
         }
-        function openLightbox(url) {
+        function openLightbox(url, photoId) {
           const img = document.getElementById("lightbox-img");
           const download = document.getElementById("download-btn");
+          const deleteBtn = document.getElementById("delete-btn");
+
           img.src = url;
           const parts = url.split("/upload/");
           const base = parts[0];
           const rest = parts[1];
           const dlUrl = base + "/upload/fl_attachment/" + rest;
+
           download.href = dlUrl;
           download.download = rest.split("/").pop();
           document.getElementById("lightbox").classList.add("show");
+
+          // 삭제 버튼 처리
+          if (deleteBtn) {
+            deleteBtn.style.display = "none";
+            auth.onAuthStateChanged(async user => {
+              if (user) {
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === "admin") {
+                  deleteBtn.style.display = "inline-block";
+                  deleteBtn.onclick = () => {
+                    if (confirm("정말로 이 사진을 삭제할까요?")) {
+                      db.collection("photos").doc(photoId).delete().then(() => {
+                        alert("삭제 완료!");
+                        document.getElementById("lightbox").classList.remove("show");
+                        window.location.reload();
+                      });
+                    }
+                  };
+                }
+              }
+            });
+          }
         }
         function closeLightbox() {
           document.getElementById("lightbox").classList.remove("show");
@@ -178,6 +214,12 @@ app.get("/mypage", (req, res) => {
 app.get("/upload", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "upload.html"));
 });
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+
 
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);

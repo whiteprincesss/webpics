@@ -14,8 +14,7 @@
       projectId: "webpics-b2443",
       storageBucket: "webpics-b2443.appspot.com",
       messagingSenderId: "996418354850",
-      appId: "1:996418354850:web:86f4484bf0a732b7d761fb",
-      measurementId: "G-3SX3JWCZE9"
+      appId: "1:996418354850:web:86f4484bf0a732b7d761fb"
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -32,6 +31,8 @@
   </div>
 
   <script>
+    let isAdmin = false;
+
     auth.onAuthStateChanged(async user => {
       if (!user) {
         alert("로그인이 필요합니다.");
@@ -42,6 +43,7 @@
       const userDoc = await db.collection("users").doc(user.uid).get();
       const nickname = userDoc.exists ? userDoc.data().nickname : "(닉네임 없음)";
       document.getElementById("nickname").textContent = "닉네임: " + nickname;
+      isAdmin = userDoc.exists && userDoc.data().role === "admin";
 
       const photoQuery = await db.collection("photos")
         .where("upload_by", "==", user.uid)
@@ -59,12 +61,27 @@
             <div class="back">
               <p>태그: ${data.tags || '없음'}</p>
               <p>업로드: ${new Date(data.upload_time).toLocaleString("ko-KR")}</p>
+              <a href="${data.filepath}" download>⬇ 다운로드</a>
+              ${isAdmin ? `<button onclick="deletePhoto('${doc.id}')">🗑 삭제</button>` : ""}
             </div>
           </div>
         `;
         photoArea.appendChild(div);
       });
     });
+
+    function deletePhoto(photoId) {
+      if (!confirm("정말로 이 사진을 삭제할까요?")) return;
+      db.collection("photos").doc(photoId).delete()
+        .then(() => {
+          alert("삭제되었습니다.");
+          window.location.reload();
+        })
+        .catch(err => {
+          console.error("삭제 실패:", err);
+          alert("삭제에 실패했습니다.");
+        });
+    }
   </script>
 </body>
 </html>
