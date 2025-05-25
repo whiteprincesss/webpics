@@ -1,158 +1,179 @@
-/* 📄 style.css - 클릭으로 뒤집히는 플립 카드 스타일 전체 */
+
+/* ✅ WebPics 최종 스타일 - 카드 + 업로드 + 이미지 원본 비율 유지 */
 
 body {
-    font-family: sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
-  }
-  
-  .container {
-    max-width: 960px;
-    margin: auto;
-    background-color: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  h1 {
-    margin-bottom: 20px;
-    font-size: 28px;
-    color: #333;
-  }
-  
-  .gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-  }
-  
-  /* 📸 플립 카드 전체 틀 */
-  .photo-card {
-    perspective: 1000px;
-    cursor: pointer;
-  }
-  
-  .card-inner {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    transform-style: preserve-3d;
-    transition: transform 0.8s;
-  }
-  
-  /* ✨ 클릭해서 뒤집히는 효과 */
-  .photo-card.flipped .card-inner {
-    transform: rotateY(180deg);
-  }
-  
-  .front, .back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 14px;
-    backface-visibility: hidden;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  }
-  
-  .front {
-    background-color: #fff;
-  }
-  
-  .card-inner img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 10px;
-  }
-  
-  .back {
-    background-color: #fafafa;
-    transform: rotateY(180deg);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 16px;
-    text-align: center;
-    color: #333;
-  }
-  
-  .back p {
-    margin: 6px 0;
-  }
-  
-  /* ⬇ 다운로드 버튼 */
-  .download-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(255, 255, 255, 0.85);
-    color: #333;
-    text-decoration: none;
-    padding: 8px;
-    border-radius: 50%;
-    font-size: 16px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    display: none;
-  }
-  
-  .front:hover .download-btn {
-    display: block;
-  }
-  
-  /* 업로드 박스 */
-  .upload-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
-    font-weight: bold;
-    color: #666;
-    text-decoration: none;
-    background-color: #ddd;
-    border: 4px dashed #aaa;
-    border-radius: 14px;
-    aspect-ratio: 1 / 1;
-  }
-  
-  .upload-box:hover {
-    background-color: #ccc;
-    color: #000;
-  }
-  
-  /* 업로드 폼 */
-  .upload-form {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-  
-  .upload-form input[type="file"] {
-    flex-grow: 1;
-  }
-  
-  .upload-form input[type="text"] {
-    flex-grow: 2;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-  }
-  
-  .upload-form button {
-    padding: 10px 20px;
-    border: none;
-    background-color: #4CAF50;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  
-  .upload-form button:hover {
-    background-color: #45a049;
-  }
-  
+  font-family: sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 30px;
+}
+
+.container {
+  max-width: 960px;
+  margin: auto;
+  background-color: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.08);
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.tag-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  max-width: 600px;
+  margin: 12px 0;
+}
+
+.tag-list label {
+  display: flex;
+  align-items: center;
+  background-color: #f2f2f2;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upload-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  font-size: 15px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+a {
+  text-decoration: none;
+  color: #6b2caf;
+  font-size: 14px;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.photo-card {
+  width: 200px;
+  height: 200px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.photo-card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.front,
+.back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.front {
+  background: #fff;
+}
+
+.front img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ⭐ 원본 비율 유지 */
+  background-color: #fefefe;
+}
+
+.back {
+  background: #f8f8f8;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 12px;
+  color: #333;
+  text-align: center;
+}
+
+.back p {
+  margin: 6px 0;
+}
+
+.download-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 16px;
+  background: rgba(255,255,255,0.9);
+  color: #333;
+  padding: 6px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: none;
+}
+
+.front:hover .download-btn {
+  display: block;
+}
+
+/* 업로드 박스도 카드와 동일 */
+.upload-box {
+  width: 200px;
+  height: 200px;
+  border: 3px dashed #aaa;
+  border-radius: 12px;
+  font-size: 64px;
+  color: #666;
+  background-color: #f2f2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.upload-box:hover {
+  background-color: #e0e0e0;
+  color: #000;
+}

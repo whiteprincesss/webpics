@@ -1,13 +1,10 @@
-// 📁 server.js
-
-require("dotenv").config(); // .env 파일 로드
+require("dotenv").config();
 
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
 const fs = require("fs");
+const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
-
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
@@ -21,23 +18,23 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-// Cloudinary용 multer 저장소 설정
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "webpics",
-    format: async (req, file) => "jpg",
+    format: async () => "jpg",
     public_id: (req, file) =>
       file.originalname.split(".")[0] + "-" + Date.now(),
   },
 });
 const upload = multer({ storage });
 
+// 정적 파일 제공
 app.use(express.static("public"));
 app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 
-// 로깅 유틸
+// 로그 기록 함수
 function logToFile(text) {
   const now = new Date().toISOString();
   const logLine = `[${now}] ${text}\n`;
@@ -119,22 +116,26 @@ app.get("/", (req, res) => {
   });
 });
 
-// 업로드 페이지
+// ✅ 업로드 페이지
 app.get("/upload", (req, res) => {
   const tagsFile = path.join(__dirname, "tags.json");
   fs.readFile(tagsFile, "utf-8", (err, data) => {
     if (err) return res.send("태그를 불러오는 데 실패했습니다.");
 
     const tags = JSON.parse(data);
-    const checkboxes = tags
-      .map(
-        (tag) => `
-      <label style="margin-right: 12px;">
-        <input type="checkbox" name="tags" value="${tag}"> ${tag}
-      </label>
-    `
-      )
-      .join("\n");
+    const checkboxes = `
+      <div class="tag-list">
+        ${tags
+          .map(
+            (tag) => `
+          <label>
+            <input type="checkbox" name="tags" value="${tag}"> ${tag}
+          </label>
+        `
+          )
+          .join("\n")}
+      </div>
+    `;
 
     const html = `
       <!DOCTYPE html>
@@ -149,12 +150,12 @@ app.get("/upload", (req, res) => {
           <h1>📤 사진 업로드</h1>
           <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
             <input type="file" name="photo" accept="image/*" required>
-            <div style="margin: 12px 0;">
-              ${checkboxes}
+            ${checkboxes}
+            <div class="upload-footer">
+              <button type="submit">업로드</button>
             </div>
-            <button type="submit">업로드</button>
           </form>
-          <a href="/" style="display:inline-block; margin-top:20px;">← 메인으로 돌아가기</a>
+          <a href="/">← 메인으로 돌아가기</a>
         </div>
       </body>
       </html>
@@ -168,7 +169,7 @@ app.post("/upload", upload.single("photo"), (req, res) => {
   const file = req.file;
   const rawTags = req.body.tags;
   const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
-  const filepath = file.path; // Cloudinary URL
+  const filepath = file.path;
   const uploadTime = new Date().toISOString();
 
   logToFile(`업로드됨: ${filepath} | 태그: ${tags}`);

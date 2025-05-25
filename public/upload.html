@@ -1,19 +1,35 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>사진 업로드</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <div class="container">
     <h1>📤 사진 업로드</h1>
+
     <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-      <input type="file" name="photo" accept="image/*" required>
-      <input type="text" name="tags" placeholder="태그 (쉼표로 구분)">
-      <button type="submit">업로드</button>
+      <label>
+        <input type="file" name="photo" accept="image/*" required />
+      </label>
+
+      <div class="tag-list">
+        <label><input type="checkbox" name="tags" value="아이브" /> 아이브</label>
+        <label><input type="checkbox" name="tags" value="에스파" /> 에스파</label>
+        <label><input type="checkbox" name="tags" value="엔믹스" /> 엔믹스</label>
+        <label><input type="checkbox" name="tags" value="르세라핌" /> 르세라핌</label>
+        <label><input type="checkbox" name="tags" value="기타 아이돌" /> 기타 아이돌</label>
+        <label><input type="checkbox" name="tags" value="가수" /> 가수</label>
+        <label><input type="checkbox" name="tags" value="배우" /> 배우</label>
+      </div>
+
+      <div class="upload-footer">
+        <button type="submit">업로드</button>
+      </div>
     </form>
-    <a href="/" style="display:inline-block; margin-top:20px;">← 메인으로 돌아가기</a>
+
+    <a href="/">← 메인으로 돌아가기</a>
   </div>
 </body>
 </html>
