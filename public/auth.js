@@ -1,73 +1,69 @@
-// 🔐 Firebase Auth + Firestore + 회원가입 확장
 const auth = firebase.auth();
 const db = firebase.firestore();
-let mode = "login";
 
-function submitAuthPage(mode) {
-  const email = document.getElementById("auth-email").value;
-  const pw = document.getElementById("auth-password").value;
-  const nickname = document.getElementById("auth-nickname")?.value?.trim();
-
-  if (mode === "login") {
-    auth.signInWithEmailAndPassword(email, pw)
-      .then(() => {
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(async result => {
+      const user = result.user;
+      const doc = await db.collection("users").doc(user.uid).get();
+      if (!doc.exists || !doc.data().nickname) {
+        window.location.href = "/signup";
+      } else {
         alert("✅ 로그인 성공!");
         window.location.href = "/";
-      })
-      .catch(err => alert("로그인 오류: " + err.message));
-  } else {
-    if (!nickname) {
-      alert("닉네임을 입력해주세요.");
-      return;
-    }
-
-    // 닉네임 중복 체크
-    db.collection("users").where("nickname", "==", nickname).get()
-      .then(snapshot => {
-        if (!snapshot.empty) {
-          alert("이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.");
-        } else {
-          // 닉네임 중복 아님 → 회원 생성
-          auth.createUserWithEmailAndPassword(email, pw)
-            .then(userCred => {
-              const uid = userCred.user.uid;
-              return db.collection("users").doc(uid).set({ nickname });
-            })
-            .then(() => {
-              alert("🎉 회원가입 완료! 로그인 해주세요.");
-              window.location.href = "/login";
-            })
-            .catch(err => alert("회원가입 오류: " + err.message));
-        }
-      })
-      .catch(err => alert("닉네임 확인 오류: " + err.message));
-  }
+      }
+    })
+    .catch(err => alert("Google 로그인 오류: " + err.message));
 }
 
-auth.onAuthStateChanged(user => {
-  if (user) {
-    console.log("🔓 로그인됨:", user.email);
-  } else {
-    console.log("🔒 로그아웃 상태");
-  }
-});
-auth.onAuthStateChanged(user => {
-  const menu = document.getElementById("menu-panel");
-  if (!menu) return;
+function setNickname() {
+  const nickname = document.getElementById("auth-nickname").value.trim();
+  const user = auth.currentUser;
+  if (!nickname) return alert("닉네임을 입력해주세요.");
+  if (!user) return alert("로그인 정보가 없습니다.");
 
-  if (user) {
-    // 로그인 상태
-    menu.innerHTML = `
-      <a href="/mypage"><button>마이페이지</button></a>
-      <button onclick="logout()">로그아웃</button>
-    `;
-  } else {
-    // 비로그인 상태
-    menu.innerHTML = `
-      <a href="/login"><button>로그인</button></a>
-      <a href="/signup"><button>회원가입</button></a>
-    `;
-  }
+  db.collection("users").where("nickname", "==", nickname).get()
+    .then(snapshot => {
+      if (!snapshot.empty) {
+        alert("이미 사용 중인 닉네임입니다.");
+        throw new Error("중복 닉네임");
+      }
+      return db.collection("users").doc(user.uid).set({ nickname }, { merge: true });
+    })
+    .then(() => {
+      alert("🎉 닉네임 설정 완료!");
+      window.location.href = "/";
+    })
+    .catch(err => {
+      console.error("닉네임 오류:", err);
+      if (err.message !== "중복 닉네임") {
+        alert("닉네임 등록 중 오류가 발생했습니다.");
+      }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  auth.onAuthStateChanged(user => {
+    const menu = document.getElementById("menu-panel");
+    if (!menu) return;
+
+    if (user) {
+      db.collection("users").doc(user.uid).get().then(doc => {
+        if (doc.exists && doc.data().nickname) {
+          menu.innerHTML = `
+            <div style="padding: 4px 10px; font-size: 14px; color: #666;">${doc.data().nickname}님</div>
+            <a href="/mypage"><button>마이페이지</button></a>
+            <button onclick="logout()">로그아웃</button>
+          `;
+        }
+      });
+    } else {
+      menu.innerHTML = `
+        <button onclick="signInWithGoogle()">Google 로그인</button>
+      `;
+    }
+  });
 });
 
 function logout() {
@@ -75,4 +71,9 @@ function logout() {
     alert("로그아웃 되었습니다.");
     window.location.reload();
   });
+}
+
+function toggleMenu() {
+  const panel = document.getElementById("menu-panel");
+  panel.classList.toggle("show");
 }

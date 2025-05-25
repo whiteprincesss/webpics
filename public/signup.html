@@ -2,25 +2,34 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>회원가입 - WebPics</title>
+  <title>닉네임 등록</title>
   <link rel="stylesheet" href="/style.css">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="/auth.js" defer></script>
+  <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
+    authDomain: "webpics-b2443.firebaseapp.com",
+    projectId: "webpics-b2443",
+    storageBucket: "webpics-b2443.appspot.com",
+    messagingSenderId: "996418354850",
+    appId: "1:996418354850:web:86f4484bf0a732b7d761fb",
+    measurementId: "G-3SX3JWCZE9"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+</script>
 </head>
 <body>
   <div class="auth-container">
-    <h1>🆕 회원가입</h1>
+    <h1>닉네임 등록</h1>
     <div class="auth-form">
       <input type="text" id="auth-nickname" placeholder="닉네임">
-      <input type="email" id="auth-email" placeholder="이메일">
-      <input type="password" id="auth-password" placeholder="비밀번호">
-      <button onclick="submitAuthPage('signup')">회원가입</button>
-      <p style="margin-top: 12px;">
-        이미 계정이 있으신가요? <a href="/login">로그인</a>
-      </p>
+      <button onclick="setNickname()">등록</button>
     </div>
+    <p class="back-home"><a href="/">← 메인으로 돌아가기</a></p>
   </div>
 </body>
 </html>

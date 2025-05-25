@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
@@ -7,7 +8,6 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const admin = require("firebase-admin");
 
-// 🔐 Firebase 초기화
 const serviceAccount = JSON.parse(
   Buffer.from(process.env.FIREBASE_CONFIG, "base64").toString("utf8")
 );
@@ -19,7 +19,6 @@ const firestore = admin.firestore();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ☁️ Cloudinary 설정
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
@@ -30,7 +29,6 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "webpics",
-    format: async () => "jpg",
     public_id: (req, file) => file.originalname.split(".")[0] + "-" + Date.now(),
   },
 });
@@ -39,11 +37,30 @@ const upload = multer({ storage });
 app.use(express.static("public"));
 app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-// 🏠 메인 페이지 + 태그 필터 기능
+app.post("/upload", upload.array("photo"), async (req, res) => {
+  const { uid, nickname, tags } = req.body;
+  const uploadTime = new Date().toISOString();
+  const files = req.files;
+  if (!files || !Array.isArray(files)) return res.status(400).send("파일이 업로드되지 않았습니다.");
+
+  for (const file of files) {
+    await firestore.collection("photos").add({
+      filepath: file.path,
+      tags: tags || "",
+      upload_time: uploadTime,
+      upload_by: uid,
+      uploader_nickname: nickname
+    });
+  }
+
+  res.redirect("/");
+});
+
 app.get("/", async (req, res) => {
   const snapshot = await firestore.collection("photos").orderBy("upload_time", "desc").get();
-  const rows = snapshot.docs.map(doc => doc.data());
+  const rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   const tagsPath = path.join(__dirname, "tags.json");
   const tagData = fs.readFileSync(tagsPath, "utf-8");
@@ -54,11 +71,9 @@ app.get("/", async (req, res) => {
   `).join("\n");
 
   const images = rows.map(photo => `
-    <div class="photo-card" data-tags="${photo.tags || ''}" onclick="openLightbox('${photo.filepath}')">
+    <div class="photo-card" data-tags="${photo.tags || ''}" data-doc-id="${photo.id}" data-filepath="${photo.filepath}" onclick="openLightbox('${photo.filepath}')">
       <div class="card-inner">
-        <div class="front">
-          <img src="${photo.filepath}" alt="사진">
-        </div>
+        <div class="front"><img src="${photo.filepath}" alt="사진"></div>
         <div class="back">
           <p>태그: ${photo.tags || "없음"}</p>
           <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
@@ -74,39 +89,45 @@ app.get("/", async (req, res) => {
       <meta charset="UTF-8">
       <title>WebPics 아카이브</title>
       <link rel="stylesheet" href="/style.css">
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+      <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
+          authDomain: "webpics-b2443.firebaseapp.com",
+          projectId: "webpics-b2443",
+          storageBucket: "webpics-b2443.appspot.com",
+          messagingSenderId: "996418354850",
+          appId: "1:996418354850:web:86f4484bf0a732b7d761fb"
+        };
+        firebase.initializeApp(firebaseConfig);
+      </script>
+      <script src="/auth.js" defer></script>
     </head>
     <body>
       <div class="navbar">
         <div class="menu-icon" onclick="toggleMenu()">☰</div>
-        <div id="menu-panel" class="hidden">
-          <a href="/login"><button>로그인</button></a>
-          <a href="/signup"><button>회원가입</button></a>
-        </div>
+        <div id="menu-panel" class="hidden"></div>
       </div>
-
       <div class="container">
         <h1>📸 WebPics 사진 아카이브</h1>
-
         <div class="tag-filter">
           <button class="filter-btn active" onclick="filterByTag('전체')">전체</button>
           ${filterButtons}
         </div>
-
         <div class="gallery">
           <a href="/upload" class="upload-box">+</a>
           ${images}
         </div>
-
         <p style="text-align:center; font-size:13px; color:#666; margin-top:40px;">
           문의는 @현서내꼬
         </p>
       </div>
-
       <div id="lightbox" onclick="closeLightbox()">
         <img id="lightbox-img" src="" alt="확대된 이미지">
         <a id="download-btn" href="#" download>⬇ 다운로드</a>
       </div>
-
       <script>
         function toggleMenu() {
           document.getElementById("menu-panel").classList.toggle("show");
@@ -128,105 +149,36 @@ app.get("/", async (req, res) => {
         }
         function filterByTag(tag) {
           document.querySelectorAll(".filter-btn").forEach(button => {
-            if (button.textContent === tag || (tag === "전체" && button.textContent === "전체")) {
-              button.classList.add("active");
-            } else {
-              button.classList.remove("active");
-            }
+            button.classList.toggle("active", button.textContent === tag || (tag === "전체" && button.textContent === "전체"));
           });
           document.querySelectorAll(".photo-card").forEach(card => {
             const tags = card.dataset.tags || "";
-            if (tag === "전체" || tags.includes(tag)) {
-              card.style.display = "block";
-            } else {
-              card.style.display = "none";
-            }
+            card.style.display = (tag === "전체" || tags.includes(tag)) ? "block" : "none";
           });
         }
       </script>
-
-      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-      <script src="/auth.js"></script>
     </body>
     </html>
   `;
-
   res.send(html);
-});
-
-// 📤 업로드 페이지 렌더링
-app.get("/upload", (req, res) => {
-  const tagsFile = path.join(__dirname, "tags.json");
-  fs.readFile(tagsFile, "utf-8", (err, data) => {
-    if (err) return res.send("태그를 불러오는 데 실패했습니다.");
-    const tags = JSON.parse(data);
-    const checkboxes = `
-      <div class="tag-list">
-        ${tags.map(tag => `
-          <label><input type="checkbox" name="tags" value="${tag}"> ${tag}</label>
-        `).join("\n")}
-      </div>
-    `;
-    const html = `
-      <!DOCTYPE html>
-      <html lang="ko">
-      <head>
-        <meta charset="UTF-8">
-        <title>사진 업로드</title>
-        <link rel="stylesheet" href="/style.css">
-      </head>
-      <body>
-        <div class="container">
-          <h1>📤 사진 업로드</h1>
-          <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="photo" accept="image/*" multiple required>
-            ${checkboxes}
-            <div class="upload-footer">
-              <button type="submit">업로드</button>
-            </div>
-          </form>
-          <a href="/">← 메인으로 돌아가기</a>
-        </div>
-      </body>
-      </html>
-    `;
-    res.send(html);
-  });
-});
-
-// ☁️ 업로드 처리
-app.post("/upload", upload.array("photo", 10), async (req, res) => {
-  const files = req.files;
-  const rawTags = req.body.tags;
-  const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
-  const uploadTime = new Date().toISOString();
-
-  for (const file of files) {
-    await firestore.collection("photos").add({
-      filepath: file.path,
-      tags,
-      upload_time: uploadTime,
-    });
-  }
-
-  res.redirect("/");
-});
-
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "signup.html"));
 });
 
+app.get("/login", (req, res) => {
+  res.redirect("/");
+});
+
 app.get("/mypage", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "mypage.html"));
 });
 
+app.get("/upload", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "upload.html"));
+});
 
-// 🚀 서버 실행
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);
 });

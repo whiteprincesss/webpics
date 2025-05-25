@@ -4,6 +4,22 @@
   <meta charset="UTF-8" />
   <title>사진 업로드</title>
   <link rel="stylesheet" href="/style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
+      authDomain: "webpics-b2443.firebaseapp.com",
+      projectId: "webpics-b2443",
+      storageBucket: "webpics-b2443.appspot.com",
+      messagingSenderId: "996418354850",
+      appId: "1:996418354850:web:86f4484bf0a732b7d761fb"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
 </head>
 <body>
   <div class="container">
@@ -11,18 +27,13 @@
 
     <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
       <label>
-        <input type="file" name="photo" accept="image/*" required />
+        <input type="file" name="photo" accept="image/*" multiple required />
       </label>
 
-      <div class="tag-list">
-        <label><input type="checkbox" name="tags" value="아이브" /> 아이브</label>
-        <label><input type="checkbox" name="tags" value="에스파" /> 에스파</label>
-        <label><input type="checkbox" name="tags" value="엔믹스" /> 엔믹스</label>
-        <label><input type="checkbox" name="tags" value="르세라핌" /> 르세라핌</label>
-        <label><input type="checkbox" name="tags" value="기타 아이돌" /> 기타 아이돌</label>
-        <label><input type="checkbox" name="tags" value="가수" /> 가수</label>
-        <label><input type="checkbox" name="tags" value="배우" /> 배우</label>
-      </div>
+      <div id="tag-list" class="tag-list"></div>
+
+      <input type="hidden" name="uid" id="upload-uid" />
+      <input type="hidden" name="nickname" id="upload-nick" />
 
       <div class="upload-footer">
         <button type="submit">업로드</button>
@@ -31,5 +42,27 @@
 
     <a href="/">← 메인으로 돌아가기</a>
   </div>
+
+  <script>
+    fetch("/tags.json")
+      .then(res => res.json())
+      .then(tags => {
+        const tagList = document.getElementById("tag-list");
+        tagList.innerHTML = tags.map(tag => `
+          <label><input type="checkbox" name="tags" value="${tag}"> ${tag}</label>
+        `).join("");
+      });
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        db.collection("users").doc(user.uid).get().then(doc => {
+          if (doc.exists) {
+            document.getElementById("upload-uid").value = user.uid;
+            document.getElementById("upload-nick").value = doc.data().nickname;
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>

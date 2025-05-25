@@ -7,6 +7,19 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="/auth.js" defer></script>
+  <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
+    authDomain: "webpics-b2443.firebaseapp.com",
+    projectId: "webpics-b2443",
+    storageBucket: "webpics-b2443.appspot.com",
+    messagingSenderId: "996418354850",
+    appId: "1:996418354850:web:86f4484bf0a732b7d761fb",
+    measurementId: "G-3SX3JWCZE9"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+</script>
 </head>
 <body>
   <div class="auth-container">
@@ -15,10 +28,9 @@
       <input type="email" id="auth-email" placeholder="이메일">
       <input type="password" id="auth-password" placeholder="비밀번호">
       <button onclick="submitAuthPage('login')">로그인</button>
-      <p style="margin-top: 12px;">
-        계정이 없으신가요? <a href="/signup">회원가입</a>
-      </p>
+      <p style="margin-top: 12px;">계정이 없으신가요? <a href="/signup">회원가입</a></p>
     </div>
+    <p class="back-home"><a href="/">← 메인으로 돌아가기</a></p>
   </div>
 </body>
 </html>

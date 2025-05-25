@@ -2,34 +2,68 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>마이페이지 - WebPics</title>
+  <title>마이페이지</title>
   <link rel="stylesheet" href="/style.css">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="/auth.js" defer></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
+      authDomain: "webpics-b2443.firebaseapp.com",
+      projectId: "webpics-b2443",
+      storageBucket: "webpics-b2443.appspot.com",
+      messagingSenderId: "996418354850",
+      appId: "1:996418354850:web:86f4484bf0a732b7d761fb",
+      measurementId: "G-3SX3JWCZE9"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
 </head>
 <body>
-  <div class="auth-container">
-    <h1>🙋 마이페이지</h1>
-    <div class="auth-form">
-      <p><strong>닉네임:</strong> <span id="nickname"></span></p>
-      <p><strong>이메일:</strong> <span id="email"></span></p>
-    </div>
+  <div class="container">
+    <h1>마이페이지</h1>
+    <p id="nickname">닉네임: </p>
+    <h2 style="margin-top:30px;">내가 올린 사진</h2>
+    <div class="gallery" id="my-photos"></div>
+    <p style="margin-top:30px;"><a href="/">← 메인으로 돌아가기</a></p>
   </div>
 
   <script>
-    auth.onAuthStateChanged(async (user) => {
+    auth.onAuthStateChanged(async user => {
       if (!user) {
         alert("로그인이 필요합니다.");
-        window.location.href = "/login";
+        location.href = "/";
         return;
       }
-      document.getElementById("email").innerText = user.email;
-      const doc = await db.collection("users").doc(user.uid).get();
-      if (doc.exists) {
-        document.getElementById("nickname").innerText = doc.data().nickname;
-      }
+
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const nickname = userDoc.exists ? userDoc.data().nickname : "(닉네임 없음)";
+      document.getElementById("nickname").textContent = "닉네임: " + nickname;
+
+      const photoQuery = await db.collection("photos")
+        .where("upload_by", "==", user.uid)
+        .orderBy("upload_time", "desc")
+        .get();
+
+      const photoArea = document.getElementById("my-photos");
+      photoQuery.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "photo-card";
+        div.innerHTML = `
+          <div class="card-inner">
+            <div class="front"><img src="${data.filepath}" alt="photo"></div>
+            <div class="back">
+              <p>태그: ${data.tags || '없음'}</p>
+              <p>업로드: ${new Date(data.upload_time).toLocaleString("ko-KR")}</p>
+            </div>
+          </div>
+        `;
+        photoArea.appendChild(div);
+      });
     });
   </script>
 </body>
