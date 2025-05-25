@@ -7,19 +7,19 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const admin = require("firebase-admin");
 
-// ✅ Firebase 서비스 계정 JSON을 base64 디코딩하여 로드
+// 🔐 Firebase 초기화
 const serviceAccount = JSON.parse(
   Buffer.from(process.env.FIREBASE_CONFIG, "base64").toString("utf8")
 );
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
 });
 const firestore = admin.firestore();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ Cloudinary 설정
+// ☁️ Cloudinary 설정
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
@@ -40,22 +40,28 @@ app.use(express.static("public"));
 app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ 메인 페이지
+// 🏠 메인 페이지 + 태그 필터 기능
 app.get("/", async (req, res) => {
   const snapshot = await firestore.collection("photos").orderBy("upload_time", "desc").get();
   const rows = snapshot.docs.map(doc => doc.data());
 
+  const tagsPath = path.join(__dirname, "tags.json");
+  const tagData = fs.readFileSync(tagsPath, "utf-8");
+  const tags = JSON.parse(tagData);
+
+  const filterButtons = tags.map(tag => `
+    <button class="filter-btn" onclick="filterByTag('${tag}')">${tag}</button>
+  `).join("\n");
+
   const images = rows.map(photo => `
-    <div class="photo-card" onclick="openLightbox('${photo.filepath}')">
+    <div class="photo-card" data-tags="${photo.tags || ''}" onclick="openLightbox('${photo.filepath}')">
       <div class="card-inner">
         <div class="front">
           <img src="${photo.filepath}" alt="사진">
         </div>
         <div class="back">
           <p>태그: ${photo.tags || "없음"}</p>
-          <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
-            timeZone: "Asia/Seoul"
-          })}</p>
+          <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
         </div>
       </div>
     </div>
@@ -73,16 +79,24 @@ app.get("/", async (req, res) => {
       <div class="navbar">
         <div class="menu-icon" onclick="toggleMenu()">☰</div>
         <div id="menu-panel" class="hidden">
-          <button onclick="showLogin()">로그인</button>
-          <button onclick="showSignup()">회원가입</button>
+          <a href="/login"><button>로그인</button></a>
+          <a href="/signup"><button>회원가입</button></a>
         </div>
       </div>
+
       <div class="container">
         <h1>📸 WebPics 사진 아카이브</h1>
+
+        <div class="tag-filter">
+          <button class="filter-btn active" onclick="filterByTag('전체')">전체</button>
+          ${filterButtons}
+        </div>
+
         <div class="gallery">
           <a href="/upload" class="upload-box">+</a>
           ${images}
         </div>
+
         <p style="text-align:center; font-size:13px; color:#666; margin-top:40px;">
           문의는 @현서내꼬
         </p>
@@ -97,58 +111,63 @@ app.get("/", async (req, res) => {
         function toggleMenu() {
           document.getElementById("menu-panel").classList.toggle("show");
         }
-        function showLogin() {
-          alert("🧑 로그인 모달 띄우기!");
-        }
-        function showSignup() {
-          alert("🆕 회원가입 모달 띄우기!");
-        }
-
         function openLightbox(url) {
           const img = document.getElementById("lightbox-img");
           const download = document.getElementById("download-btn");
-
           img.src = url;
           const parts = url.split("/upload/");
           const base = parts[0];
           const rest = parts[1];
           const dlUrl = base + "/upload/fl_attachment/" + rest;
-
           download.href = dlUrl;
           download.download = rest.split("/").pop();
           document.getElementById("lightbox").classList.add("show");
         }
-
         function closeLightbox() {
           document.getElementById("lightbox").classList.remove("show");
         }
+        function filterByTag(tag) {
+          document.querySelectorAll(".filter-btn").forEach(button => {
+            if (button.textContent === tag || (tag === "전체" && button.textContent === "전체")) {
+              button.classList.add("active");
+            } else {
+              button.classList.remove("active");
+            }
+          });
+          document.querySelectorAll(".photo-card").forEach(card => {
+            const tags = card.dataset.tags || "";
+            if (tag === "전체" || tags.includes(tag)) {
+              card.style.display = "block";
+            } else {
+              card.style.display = "none";
+            }
+          });
+        }
       </script>
+
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+      <script src="/auth.js"></script>
     </body>
     </html>
   `;
+
   res.send(html);
 });
 
-// ✅ 업로드 페이지 (/upload GET)
+// 📤 업로드 페이지 렌더링
 app.get("/upload", (req, res) => {
-  const tagsPath = path.join(__dirname, "tags.json");
-
-  fs.readFile(tagsPath, "utf-8", (err, data) => {
-    if (err) {
-      return res.send("❌ 태그를 불러오는 데 실패했습니다.");
-    }
-
+  const tagsFile = path.join(__dirname, "tags.json");
+  fs.readFile(tagsFile, "utf-8", (err, data) => {
+    if (err) return res.send("태그를 불러오는 데 실패했습니다.");
     const tags = JSON.parse(data);
     const checkboxes = `
       <div class="tag-list">
         ${tags.map(tag => `
-          <label>
-            <input type="checkbox" name="tags" value="${tag}"> ${tag}
-          </label>
+          <label><input type="checkbox" name="tags" value="${tag}"> ${tag}</label>
         `).join("\n")}
       </div>
     `;
-
     const html = `
       <!DOCTYPE html>
       <html lang="ko">
@@ -176,7 +195,7 @@ app.get("/upload", (req, res) => {
   });
 });
 
-// ✅ 업로드 처리 (/upload POST)
+// ☁️ 업로드 처리
 app.post("/upload", upload.array("photo", 10), async (req, res) => {
   const files = req.files;
   const rawTags = req.body.tags;
@@ -187,14 +206,27 @@ app.post("/upload", upload.array("photo", 10), async (req, res) => {
     await firestore.collection("photos").add({
       filepath: file.path,
       tags,
-      upload_time: uploadTime
+      upload_time: uploadTime,
     });
   }
 
   res.redirect("/");
 });
 
-// ✅ 서버 실행
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+app.get("/signup", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "signup.html"));
+});
+
+app.get("/mypage", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "mypage.html"));
+});
+
+
+// 🚀 서버 실행
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);
 });

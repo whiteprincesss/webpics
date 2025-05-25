@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>로그인 - WebPics</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="/auth.js" defer></script>
+</head>
+<body>
+  <div class="auth-container">
+    <h1>🔐 로그인</h1>
+    <div class="auth-form">
+      <input type="email" id="auth-email" placeholder="이메일">
+      <input type="password" id="auth-password" placeholder="비밀번호">
+      <button onclick="submitAuthPage('login')">로그인</button>
+      <p style="margin-top: 12px;">
+        계정이 없으신가요? <a href="/signup">회원가입</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

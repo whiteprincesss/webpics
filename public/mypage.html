@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>마이페이지 - WebPics</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="/auth.js" defer></script>
+</head>
+<body>
+  <div class="auth-container">
+    <h1>🙋 마이페이지</h1>
+    <div class="auth-form">
+      <p><strong>닉네임:</strong> <span id="nickname"></span></p>
+      <p><strong>이메일:</strong> <span id="email"></span></p>
+    </div>
+  </div>
+
+  <script>
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        alert("로그인이 필요합니다.");
+        window.location.href = "/login";
+        return;
+      }
+      document.getElementById("email").innerText = user.email;
+      const doc = await db.collection("users").doc(user.uid).get();
+      if (doc.exists) {
+        document.getElementById("nickname").innerText = doc.data().nickname;
+      }
+    });
+  </script>
+</body>
+</html>

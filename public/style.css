@@ -20,7 +20,6 @@ h1 {
   color: #333;
 }
 
-/* ✅ 햄버거 메뉴 */
 .navbar {
   position: absolute;
   top: 20px;
@@ -72,7 +71,36 @@ h1 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ✅ 태그 영역 (칩 스타일 + 5열 정렬) */
+.tag-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.filter-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #eee;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  min-width: 80px;
+  text-align: center;
+  display: inline-block;
+}
+
+.filter-btn:hover {
+  background-color: #ddd;
+}
+
+.filter-btn.active {
+  background-color: #d0d4ff;
+  font-weight: bold;
+}
+
 .tag-list {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -83,15 +111,17 @@ h1 {
 .tag-list label {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background-color: #eef2ff;
   border-radius: 20px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-size: 13px;
   color: #333;
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
   white-space: nowrap;
+  max-width: 140px;
+  text-align: left;
 }
 
 .tag-list label:hover {
@@ -102,13 +132,11 @@ h1 {
   margin-right: 6px;
 }
 
-/* ✅ 업로드 버튼 */
 .upload-footer {
   margin-top: 16px;
   text-align: right;
 }
 
-/* ✅ 갤러리 사진 */
 .gallery {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -170,7 +198,6 @@ h1 {
   text-align: center;
 }
 
-/* ✅ 업로드 박스 */
 .upload-box {
   width: 180px;
   height: 180px;
@@ -190,7 +217,6 @@ h1 {
   color: #000;
 }
 
-/* ✅ 라이트박스 */
 #lightbox {
   display: none;
   position: fixed;
@@ -224,4 +250,61 @@ h1 {
   border-radius: 8px;
   text-decoration: none;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.auth-container {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-container h1 {
+  font-size: 26px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.auth-form input {
+  padding: 10px;
+  font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.auth-form button {
+  padding: 10px;
+  background-color: #4f7cff;
+  color: white;
+  font-size: 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.auth-form button:hover {
+  background-color: #3c65d1;
+}
+
+.auth-form p {
+  font-size: 13px;
+  color: #555;
+  text-align: center;
 }
