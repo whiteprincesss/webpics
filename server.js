@@ -8,8 +8,7 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const admin = require("firebase-admin");
 
-// 🔥 Firebase 초기화
-const serviceAccount = require("./webpics-b2443-firebase-adminsdk-fbsvc-ee1bf87fcc.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -18,7 +17,6 @@ const firestore = admin.firestore();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Cloudinary 설정
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
@@ -39,7 +37,6 @@ app.use(express.static("public"));
 app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 
-// 메인 페이지 (Firestore에서 사진 목록 불러오기)
 app.get("/", async (req, res) => {
   const snapshot = await firestore.collection("photos").orderBy("upload_time", "desc").get();
   const rows = snapshot.docs.map(doc => doc.data());
@@ -95,7 +92,6 @@ app.get("/", async (req, res) => {
   res.send(html);
 });
 
-// 업로드 페이지
 app.get("/upload", (req, res) => {
   const tagsFile = path.join(__dirname, "tags.json");
   fs.readFile(tagsFile, "utf-8", (err, data) => {
@@ -137,7 +133,6 @@ app.get("/upload", (req, res) => {
   });
 });
 
-// 업로드 처리 → Firestore 저장
 app.post("/upload", upload.single("photo"), async (req, res) => {
   const file = req.file;
   const rawTags = req.body.tags;
@@ -157,5 +152,5 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Firestore 서버 실행 중: http://localhost:${port}`);
+  console.log(`🚀 서버 실행 중: http://localhost:${port}`);
 });
