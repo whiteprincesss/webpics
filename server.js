@@ -1,25 +1,50 @@
 // 📁 server.js
 
+require("dotenv").config(); // .env 파일 로드
+
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const crypto = require("crypto");
 const fs = require("fs");
 const sqlite3 = require("sqlite3").verbose();
 
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+
+// Cloudinary 설정
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
+
+// Cloudinary용 multer 저장소 설정
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "webpics",
+    format: async (req, file) => "jpg",
+    public_id: (req, file) =>
+      file.originalname.split(".")[0] + "-" + Date.now(),
+  },
+});
+const upload = multer({ storage });
 
 app.use(express.static("public"));
 app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 
+// 로깅 유틸
 function logToFile(text) {
   const now = new Date().toISOString();
   const logLine = `[${now}] ${text}\n`;
   fs.appendFileSync("server.log", logLine);
 }
 
+// SQLite DB 초기화
 const db = new sqlite3.Database("./photos.db");
 db.serialize(() => {
   db.run(`
@@ -32,19 +57,7 @@ db.serialize(() => {
   `);
 });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/pics");
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const base = file.originalname + Date.now();
-    const hash = crypto.createHash("md5").update(base).digest("hex");
-    cb(null, `${hash}${ext}`);
-  },
-});
-const upload = multer({ storage });
-
+// 메인 페이지
 app.get("/", (req, res) => {
   db.all("SELECT * FROM photos ORDER BY id DESC", (err, rows) => {
     if (err) return res.send("DB 오류 발생");
@@ -106,6 +119,7 @@ app.get("/", (req, res) => {
   });
 });
 
+// 업로드 페이지
 app.get("/upload", (req, res) => {
   const tagsFile = path.join(__dirname, "tags.json");
   fs.readFile(tagsFile, "utf-8", (err, data) => {
@@ -149,11 +163,12 @@ app.get("/upload", (req, res) => {
   });
 });
 
+// 업로드 처리
 app.post("/upload", upload.single("photo"), (req, res) => {
   const file = req.file;
   const rawTags = req.body.tags;
   const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
-  const filepath = `/pics/${file.filename}`;
+  const filepath = file.path; // Cloudinary URL
   const uploadTime = new Date().toISOString();
 
   logToFile(`업로드됨: ${filepath} | 태그: ${tags}`);
