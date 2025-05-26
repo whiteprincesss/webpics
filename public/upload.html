@@ -25,16 +25,12 @@
   <div class="container">
     <h1>📤 사진 업로드</h1>
 
-    <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-      <label>
-        <input type="file" name="photo" accept="image/*" multiple required />
-      </label>
-
-      <div id="tag-list" class="tag-list"></div>
-
-      <input type="hidden" name="uid" id="upload-uid" />
-      <input type="hidden" name="nickname" id="upload-nick" />
-
+    <form class="upload-form" id="upload-form" method="post" enctype="multipart/form-data" action="/upload">
+      <input type="file" id="photo" name="photo" accept="image/*" multiple required />
+      <div id="tag-box" class="tag-list"></div>
+      <input type="hidden" name="uid" id="uid" />
+      <input type="hidden" name="nickname" id="nickname" />
+      <input type="hidden" name="hashes" id="hashes" />
       <div class="upload-footer">
         <button type="submit">업로드</button>
       </div>
@@ -44,25 +40,53 @@
   </div>
 
   <script>
-    fetch("/tags.json")
-      .then(res => res.json())
-      .then(tags => {
-        const tagList = document.getElementById("tag-list");
-        tagList.innerHTML = tags.map(tag => `
-          <label><input type="checkbox" name="tags" value="${tag}"> ${tag}</label>
-        `).join("");
-      });
-
-    auth.onAuthStateChanged(user => {
+    async function calculateHash(file) {
+      const buffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+  
+    auth.onAuthStateChanged(async user => {
       if (user) {
-        db.collection("users").doc(user.uid).get().then(doc => {
-          if (doc.exists) {
-            document.getElementById("upload-uid").value = user.uid;
-            document.getElementById("upload-nick").value = doc.data().nickname;
-          }
-        });
+        document.getElementById("uid").value = user.uid;
+    
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        document.getElementById("nickname").value = userDoc.exists ? userDoc.data().nickname : "";
+      } else {
+        // 비로그인 시 nickname은 익명 처리
+        document.getElementById("nickname").value = "익명";
       }
+    
+      // ✅ 로그인 여부와 상관없이 태그는 항상 로드
+      fetch("/tags.json")
+        .then(res => res.json())
+        .then(tags => {
+          const box = document.getElementById("tag-box");
+          box.innerHTML = tags.map(tag => `
+            <label><input type="checkbox" name="tags" value="${tag}" /> ${tag}</label>
+          `).join("\n");
+        });
+    });    
+  
+    document.getElementById("upload-form").addEventListener("submit", async (e) => {
+      e.preventDefault(); // ❗ 기본 submit 동작을 막아야 함
+  
+      const form = e.target;
+      const files = document.getElementById("photo").files;
+      const hashes = [];
+  
+      for (const file of files) {
+        const hash = await calculateHash(file);
+        hashes.push(hash);
+      }
+  
+      document.getElementById("hashes").value = JSON.stringify(hashes);
+  
+      // ✅ 해시 다 넣었으니 폼을 수동 전송
+      form.submit();
     });
-  </script>
+  </script>  
 </body>
 </html>

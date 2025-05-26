@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
@@ -29,7 +28,9 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "webpics",
-    public_id: (req, file) => file.originalname.split(".")[0] + "-" + Date.now(),
+    resource_type: "image", // 👈 반드시 넣기!
+    public_id: (req, file) =>
+      file.originalname.split(".")[0] + "-" + Date.now(),
   },
 });
 const upload = multer({ storage });
@@ -40,56 +41,101 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.post("/upload", upload.array("photo"), async (req, res) => {
-  const { uid, nickname, tags } = req.body;
-  const uploadTime = new Date().toISOString();
-  const files = req.files;
+  try {
+    const { uid, nickname } = req.body;
+    const rawTags = req.body.tags;
+    const hashes = JSON.parse(req.body.hashes || "[]");
+    const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
+    const uploadTime = new Date().toISOString();
+    const files = req.files;
 
-  if (!files || !Array.isArray(files)) {
-    return res.status(400).send("❌ 파일이 업로드되지 않았습니다.");
-  }
-
-  // ✅ 여기에 추가!
-  const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  for (const file of files) {
-    if (!allowedTypes.includes(file.mimetype)) {
-      return res.status(400).send("❌ 이미지 파일(jpg, png, gif, webp)만 업로드할 수 있습니다.");
+    if (!files || !Array.isArray(files)) {
+      return res.send(`<script>alert("❌ 파일이 업로드되지 않았습니다."); window.location.href="/upload";</script>`);
     }
 
-    await firestore.collection("photos").add({
-      filepath: file?.path || file?.secure_url || file?.url || "",
-      tags,
-      upload_time: uploadTime,
-      upload_by: uid,
-      uploader_nickname: nickname
-    });
-  }
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const hash = hashes[i];
 
-  res.redirect("/");
+      console.log("🔥 FILE =", file);
+      console.log("📛 HASH =", hash);
+
+      if (!hash) {
+        return res.send(`<script>alert("❌ 파일 해시가 누락되었습니다."); window.location.href="/upload";</script>`);
+      }
+
+      const duplicate = await firestore.collection("photos").where("file_hash", "==", hash).get();
+      if (!duplicate.empty) {
+        return res.send(`<script>alert("❌ 이미 업로드된 이미지입니다."); window.location.href="/upload";</script>`);
+      }
+
+      const imageUrl =
+        typeof file?.secure_url === "string" ? file.secure_url :
+        typeof file?.url === "string" ? file.url :
+        typeof file?.path === "string" ? file.path :
+        "";
+
+      if (!imageUrl) {
+        return res.send(`<script>alert("❌ 이미지 URL 추출 실패"); window.location.href="/upload";</script>`);
+      }
+
+      await firestore.collection("photos").add({
+        filepath: imageUrl,
+        file_hash: hash,
+        tags,
+        upload_time: uploadTime,
+        upload_by: uid,
+        uploader_nickname: nickname || "익명"
+      });
+    }
+
+    res.redirect("/");
+  } catch (err) {
+    console.error("❌ 서버 오류:", err);
+    res.status(500).send(`<script>alert("❌ 서버 오류 발생: ${err.message}"); window.location.href="/upload";</script>`);
+  }
 });
 
 app.get("/", async (req, res) => {
-  const snapshot = await firestore.collection("photos").orderBy("upload_time", "desc").get();
-  const rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const snapshot = await firestore
+    .collection("photos")
+    .orderBy("upload_time", "desc")
+    .get();
+  const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   const tagsPath = path.join(__dirname, "tags.json");
   const tagData = fs.readFileSync(tagsPath, "utf-8");
   const tags = JSON.parse(tagData);
 
-  const filterButtons = tags.map(tag => `
+  const filterButtons = tags
+    .map(
+      (tag) => `
     <button class="filter-btn" onclick="filterByTag('${tag}')">${tag}</button>
-  `).join("\n");
+  `
+    )
+    .join("\n");
 
-  const images = rows.map(photo => `
-    <div class="photo-card" data-tags="${photo.tags || ''}" data-doc-id="${photo.id}" data-filepath="${photo.filepath}" onclick="openLightbox('${photo.filepath}', '${photo.id}')">
+  const images = rows
+    .map(
+      (photo) => `
+    <div class="photo-card" data-tags="${photo.tags || ""}" data-doc-id="${
+        photo.id
+      }" data-filepath="${photo.filepath}" onclick="openLightbox('${
+        photo.filepath
+      }', '${photo.id}')">
       <div class="card-inner">
         <div class="front"><img src="${photo.filepath}" alt="사진"></div>
         <div class="back">
           <p>태그: ${photo.tags || "없음"}</p>
-          <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
+          <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
+            timeZone: "Asia/Seoul",
+          })}</p>
         </div>
       </div>
     </div>
-  `).join("\n");
+  `
+    )
+    .join("\n");
 
   const html = `
     <!DOCTYPE html>
@@ -218,8 +264,6 @@ app.get("/upload", (req, res) => {
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
-
-
 
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);
