@@ -93,7 +93,6 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
   }
 });
 
-
 app.get("/", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const pageSize = 19;
@@ -103,13 +102,17 @@ app.get("/", async (req, res) => {
     .collection("photos")
     .orderBy("upload_time", "desc")
     .get();
+
   const totalPhotos = snapshot.size;
   const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   const pagedRows = rows.slice(offset, offset + pageSize);
 
   const tagsPath = path.join(__dirname, "tags.json");
   const tagData = fs.readFileSync(tagsPath, "utf-8");
-  const tags = JSON.parse(tagData);
+  const rawTags = JSON.parse(tagData);
+
+  // 전체 태그 필터 버튼 포함
+  const tags = ["전체", ...rawTags];
 
   const filterButtons = tags
     .map(
@@ -145,10 +148,10 @@ app.get("/", async (req, res) => {
   const nextPage = page < totalPages ? page + 1 : null;
 
   const pagination = `
-    <div style="text-align:center; margin-top:30px; font-size:15px;">
+    <div style="text-align:center; margin-top:30px;">
       ${
         prevPage
-          ? `<a href="/?page=${prevPage}" style="margin-right:20px; text-decoration:none; font-weight:bold;">← 이전</a>`
+          ? `<a href="/?page=${prevPage}" style="margin-right:20px;">← 이전</a>`
           : ""
       }
       <span id="page-display" style="margin: 0 10px; font-weight:500; cursor:pointer;" onclick="editPageNumber()">
@@ -156,7 +159,7 @@ app.get("/", async (req, res) => {
       </span>
       ${
         nextPage
-          ? `<a href="/?page=${nextPage}" style="margin-left:20px; text-decoration:none; font-weight:bold;">다음 →</a>`
+          ? `<a href="/?page=${nextPage}" style="margin-left:20px;">다음 →</a>`
           : ""
       }
     </div>
@@ -166,32 +169,21 @@ app.get("/", async (req, res) => {
     <!DOCTYPE html>
     <html lang="ko">
     <head>
-      <meta charset="UTF-8">
+      <meta charset="UTF-8" />
       <title>WebPics</title>
-      <link rel="stylesheet" href="/style.css">
+      <link rel="stylesheet" href="/style.css" />
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-      <script src="/lightbox_admin.js"></script>
-      <script>
-        const firebaseConfig = {
-          apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
-          authDomain: "webpics-b2443.firebaseapp.com",
-          projectId: "webpics-b2443",
-          storageBucket: "webpics-b2443.appspot.com",
-          messagingSenderId: "996418354850",
-          appId: "1:996418354850:web:86f4484bf0a732b7d761fb"
-        };
-        firebase.initializeApp(firebaseConfig);
-      </script>
       <script src="/auth.js" defer></script>
+      <script src="/lightbox_admin.js" defer></script>
     </head>
     <body>
       <div class="container">
         <h1><a href="/">📸 WebPics 사진 아카이브</a></h1>
 
         <div class="filter-bar">
-          <span style="margin-right:10px;">🔍 태그 필터:</span>
+          <span>🔍 태그 필터:</span>
           ${filterButtons}
         </div>
 
@@ -202,94 +194,23 @@ app.get("/", async (req, res) => {
 
         ${pagination}
 
-        <p style="text-align:center; font-size:13px; color:#666; margin-top:40px;">
-          문의는 @현서내꼬
-        </p>
+        <p style="text-align:center; margin-top:40px; font-size:13px; color:#666;">문의는 @현서내꼬</p>
       </div>
 
       <div id="lightbox" onclick="closeLightbox()">
-        <img id="lightbox-img" src="" alt="확대된 이미지">
+        <img id="lightbox-img" src="" />
         <a id="download-btn" href="#" download>⬇ 다운로드</a>
         <button id="delete-btn" style="display:none;">🗑 삭제</button>
       </div>
 
       <script>
-        function editPageNumber() {
-          const span = document.getElementById("page-display");
-          const parts = span.innerText.split('/');
-          const current = parseInt(parts[0].trim());
-          const total = parseInt(parts[1].trim());
-
-          span.innerHTML = '<input id="page-input-editable" type="number" min="1" max="' + total + '" value="' + current + '"' +
-            ' style="width: 60px; text-align:center; font-size:14px;"' +
-            ' onkeydown="if(event.key===\\'Enter\\'){submitPageChange(this, ' + total + ')}"' +
-            ' onblur="cancelPageChange(this, ' + current + ', ' + total + ')" /> / ' + total;
-
-          document.getElementById("page-input-editable").focus();
-        }
-
-        function submitPageChange(input, total) {
-          const val = parseInt(input.value);
-          if (!isNaN(val) && val > 0 && val <= total) {
-            location.href = "/?page=" + val;
-          } else {
-            alert("❌ 유효한 페이지 번호를 입력해주세요.");
-            input.blur();
-          }
-        }
-
-        function cancelPageChange(input, current, total) {
-          const span = document.getElementById("page-display");
-          span.innerHTML = current + ' / ' + total;
-        }
-
-        function openLightbox(url, photoId) {
-          const img = document.getElementById("lightbox-img");
-          const download = document.getElementById("download-btn");
-          const deleteBtn = document.getElementById("delete-btn");
-
-          img.src = url;
-          const parts = url.split("/upload/");
-          const base = parts[0];
-          const rest = parts[1];
-          const dlUrl = base + "/upload/fl_attachment/" + rest;
-
-          download.href = dlUrl;
-          download.download = rest.split("/").pop();
-          document.getElementById("lightbox").classList.add("show");
-
-          deleteBtn.style.display = "none";
-          firebase.auth().onAuthStateChanged(async user => {
-            if (user) {
-              const db = firebase.firestore();
-              const userDoc = await db.collection("users").doc(user.uid).get();
-              if (userDoc.exists && userDoc.data().role === "admin") {
-                deleteBtn.style.display = "inline-block";
-                deleteBtn.onclick = () => {
-                  if (confirm("정말로 이 사진을 삭제할까요?")) {
-                    db.collection("photos").doc(photoId).delete().then(() => {
-                      alert("삭제 완료!");
-                      document.getElementById("lightbox").classList.remove("show");
-                      location.reload();
-                    });
-                  }
-                };
-              }
-            }
-          });
-        }
-
-        function closeLightbox() {
-          document.getElementById("lightbox").classList.remove("show");
-        }
-
         function filterByTag(tag) {
-          document.querySelectorAll(".filter-btn").forEach(button => {
-            button.classList.toggle("active", button.textContent === tag || (tag === "전체" && button.textContent === "전체"));
+          document.querySelectorAll(".filter-btn").forEach(btn => {
+            btn.classList.toggle("active", btn.textContent === tag);
           });
           document.querySelectorAll(".photo-card").forEach(card => {
             const tags = card.dataset.tags || "";
-            card.style.display = (tag === "전체" || tags.includes(tag)) ? "block" : "none";
+            card.style.display = tag === "전체" || tags.includes(tag) ? "block" : "none";
           });
         }
       </script>

@@ -17,7 +17,18 @@ body {
 h1 {
   font-size: 24px;
   margin-bottom: 24px;
-  color: #333;
+  color: #333; /* 밑줄 제거 */
+}
+
+h1 a {
+  color: inherit;          /* 부모(h1)의 색상 그대로 사용 */
+  text-decoration: none;   /* 밑줄 제거 */
+}
+
+
+h1 a:hover {
+  text-decoration: none;
+  color: inherit;
 }
 
 .navbar {
