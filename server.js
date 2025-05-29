@@ -57,9 +57,6 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
       const file = files[i];
       const hash = hashes[i];
 
-      console.log("🔥 FILE =", file);
-      console.log("📛 HASH =", hash);
-
       if (!hash) {
         return res.send(`<script>alert("❌ 파일 해시가 누락되었습니다."); window.location.href="/upload";</script>`);
       }
@@ -96,12 +93,19 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
   }
 });
 
+
 app.get("/", async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = 19;
+  const offset = (page - 1) * pageSize;
+
   const snapshot = await firestore
     .collection("photos")
     .orderBy("upload_time", "desc")
     .get();
+  const totalPhotos = snapshot.size;
   const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const pagedRows = rows.slice(offset, offset + pageSize);
 
   const tagsPath = path.join(__dirname, "tags.json");
   const tagData = fs.readFileSync(tagsPath, "utf-8");
@@ -109,33 +113,54 @@ app.get("/", async (req, res) => {
 
   const filterButtons = tags
     .map(
-      (tag) => `
-    <button class="filter-btn" onclick="filterByTag('${tag}')">${tag}</button>
-  `
+      (tag) =>
+        `<button class="filter-btn" onclick="filterByTag('${tag}')">${tag}</button>`
     )
     .join("\n");
 
-  const images = rows
+  const images = pagedRows
     .map(
       (photo) => `
-    <div class="photo-card" data-tags="${photo.tags || ""}" data-doc-id="${
+      <div class="photo-card" data-tags="${photo.tags || ""}" data-doc-id="${
         photo.id
       }" data-filepath="${photo.filepath}" onclick="openLightbox('${
         photo.filepath
       }', '${photo.id}')">
-      <div class="card-inner">
-        <div class="front"><img src="${photo.filepath}" alt="사진"></div>
-        <div class="back">
-          <p>태그: ${photo.tags || "없음"}</p>
-          <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
-            timeZone: "Asia/Seoul",
-          })}</p>
+        <div class="card-inner">
+          <div class="front"><img src="${photo.filepath}" alt="사진"></div>
+          <div class="back">
+            <p>태그: ${photo.tags || "없음"}</p>
+            <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
+              timeZone: "Asia/Seoul",
+            })}</p>
+          </div>
         </div>
       </div>
-    </div>
-  `
+    `
     )
     .join("\n");
+
+  const totalPages = Math.ceil(totalPhotos / pageSize);
+  const prevPage = page > 1 ? page - 1 : null;
+  const nextPage = page < totalPages ? page + 1 : null;
+
+  const pagination = `
+    <div style="text-align:center; margin-top:30px; font-size:15px;">
+      ${
+        prevPage
+          ? `<a href="/?page=${prevPage}" style="margin-right:20px; text-decoration:none; font-weight:bold;">← 이전</a>`
+          : ""
+      }
+      <span id="page-display" style="margin: 0 10px; font-weight:500; cursor:pointer;" onclick="editPageNumber()">
+        ${page} / ${totalPages}
+      </span>
+      ${
+        nextPage
+          ? `<a href="/?page=${nextPage}" style="margin-left:20px; text-decoration:none; font-weight:bold;">다음 →</a>`
+          : ""
+      }
+    </div>
+  `;
 
   const html = `
     <!DOCTYPE html>
@@ -162,33 +187,62 @@ app.get("/", async (req, res) => {
       <script src="/auth.js" defer></script>
     </head>
     <body>
-      <div class="navbar">
-        <div class="menu-icon" onclick="toggleMenu()">☰</div>
-        <div id="menu-panel" class="hidden"></div>
-      </div>
       <div class="container">
         <h1>📸 WebPics 사진 아카이브</h1>
-        <div class="tag-filter">
-          <button class="filter-btn active" onclick="filterByTag('전체')">전체</button>
+
+        <div class="filter-bar">
+          <span style="margin-right:10px;">🔍 태그 필터:</span>
           ${filterButtons}
         </div>
+
         <div class="gallery">
           <a href="/upload" class="upload-box">+</a>
           ${images}
         </div>
+
+        ${pagination}
+
         <p style="text-align:center; font-size:13px; color:#666; margin-top:40px;">
           문의는 @현서내꼬
         </p>
       </div>
+
       <div id="lightbox" onclick="closeLightbox()">
         <img id="lightbox-img" src="" alt="확대된 이미지">
         <a id="download-btn" href="#" download>⬇ 다운로드</a>
         <button id="delete-btn" style="display:none;">🗑 삭제</button>
       </div>
+
       <script>
-        function toggleMenu() {
-          document.getElementById("menu-panel").classList.toggle("show");
+        function editPageNumber() {
+          const span = document.getElementById("page-display");
+          const parts = span.innerText.split('/');
+          const current = parseInt(parts[0].trim());
+          const total = parseInt(parts[1].trim());
+
+          span.innerHTML = '<input id="page-input-editable" type="number" min="1" max="' + total + '" value="' + current + '"' +
+            ' style="width: 60px; text-align:center; font-size:14px;"' +
+            ' onkeydown="if(event.key===\\'Enter\\'){submitPageChange(this, ' + total + ')}"' +
+            ' onblur="cancelPageChange(this, ' + current + ', ' + total + ')" /> / ' + total;
+
+          document.getElementById("page-input-editable").focus();
         }
+
+        function submitPageChange(input, total) {
+          const val = parseInt(input.value);
+          if (!isNaN(val) && val > 0 && val <= total) {
+            location.href = "/?page=" + val;
+          } else {
+            alert("❌ 유효한 페이지 번호를 입력해주세요.");
+            input.blur();
+          }
+        }
+
+        function cancelPageChange(input, current, total) {
+          const span = document.getElementById("page-display");
+          span.innerHTML = current + ' / ' + total;
+        }
+
         function openLightbox(url, photoId) {
           const img = document.getElementById("lightbox-img");
           const download = document.getElementById("download-btn");
@@ -204,31 +258,31 @@ app.get("/", async (req, res) => {
           download.download = rest.split("/").pop();
           document.getElementById("lightbox").classList.add("show");
 
-          // 삭제 버튼 처리
-          if (deleteBtn) {
-            deleteBtn.style.display = "none";
-            auth.onAuthStateChanged(async user => {
-              if (user) {
-                const userDoc = await db.collection("users").doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().role === "admin") {
-                  deleteBtn.style.display = "inline-block";
-                  deleteBtn.onclick = () => {
-                    if (confirm("정말로 이 사진을 삭제할까요?")) {
-                      db.collection("photos").doc(photoId).delete().then(() => {
-                        alert("삭제 완료!");
-                        document.getElementById("lightbox").classList.remove("show");
-                        window.location.reload();
-                      });
-                    }
-                  };
-                }
+          deleteBtn.style.display = "none";
+          firebase.auth().onAuthStateChanged(async user => {
+            if (user) {
+              const db = firebase.firestore();
+              const userDoc = await db.collection("users").doc(user.uid).get();
+              if (userDoc.exists && userDoc.data().role === "admin") {
+                deleteBtn.style.display = "inline-block";
+                deleteBtn.onclick = () => {
+                  if (confirm("정말로 이 사진을 삭제할까요?")) {
+                    db.collection("photos").doc(photoId).delete().then(() => {
+                      alert("삭제 완료!");
+                      document.getElementById("lightbox").classList.remove("show");
+                      location.reload();
+                    });
+                  }
+                };
               }
-            });
-          }
+            }
+          });
         }
+
         function closeLightbox() {
           document.getElementById("lightbox").classList.remove("show");
         }
+
         function filterByTag(tag) {
           document.querySelectorAll(".filter-btn").forEach(button => {
             button.classList.toggle("active", button.textContent === tag || (tag === "전체" && button.textContent === "전체"));
@@ -242,6 +296,7 @@ app.get("/", async (req, res) => {
     </body>
     </html>
   `;
+
   res.send(html);
 });
 
@@ -263,6 +318,17 @@ app.get("/upload", (req, res) => {
 
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+// 404 처리 (가장 마지막에)
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+});
+
+// 500 처리 (에러 핸들러)
+app.use((err, req, res, next) => {
+  console.error("🔥 서버 오류 발생:", err);
+  res.status(500).sendFile(path.join(__dirname, "public", "500.html"));
 });
 
 app.listen(port, () => {

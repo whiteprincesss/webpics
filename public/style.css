@@ -329,3 +329,58 @@ h1 {
   font-size: 14px;
   cursor: pointer;
 }
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 30px;
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+
+.pagination a {
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  color: #333;
+  transition: all 0.2s ease-in-out;
+  font-weight: bold;
+  border: 1px solid #ccc;
+}
+
+.pagination a:hover {
+  background-color: #dce0ff;
+  color: #000;
+}
+
+.pagination .current-page {
+  font-weight: bold;
+  padding: 6px 12px;
+  background-color: #4f7cff;
+  color: white;
+  border-radius: 8px;
+}
+
+.page-jump-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.page-jump-form input {
+  width: 60px;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.page-jump-form button {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: #4f7cff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
