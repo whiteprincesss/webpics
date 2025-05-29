@@ -167,7 +167,7 @@ app.get("/", async (req, res) => {
     <html lang="ko">
     <head>
       <meta charset="UTF-8">
-      <title>WebPics 아카이브</title>
+      <title>WebPics</title>
       <link rel="stylesheet" href="/style.css">
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -188,7 +188,7 @@ app.get("/", async (req, res) => {
     </head>
     <body>
       <div class="container">
-        <h1>📸 WebPics 사진 아카이브</h1>
+        <h1><a href="/">📸 WebPics 사진 아카이브</a></h1>
 
         <div class="filter-bar">
           <span style="margin-right:10px;">🔍 태그 필터:</span>
