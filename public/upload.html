@@ -61,13 +61,13 @@
     
       // ✅ 로그인 여부와 상관없이 태그는 항상 로드
       fetch("/tags.json")
-        .then(res => res.json())
-        .then(tags => {
-          const box = document.getElementById("tag-box");
-          box.innerHTML = tags.map(tag => `
-            <label><input type="checkbox" name="tags" value="${tag}" /> ${tag}</label>
-          `).join("\n");
-        });
+      .then(res => res.json())
+      .then(tags => {
+        const box = document.getElementById("tag-box");
+        box.innerHTML = tags.map(tag => `
+          <label><input type="checkbox" name="tags[]" value="${tag}" /> ${tag}</label>
+        `).join("\n");
+      });
     });    
   
     document.getElementById("upload-form").addEventListener("submit", async (e) => {

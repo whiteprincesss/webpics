@@ -28,7 +28,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "webpics",
-    resource_type: "image", // 👈 반드시 넣기!
+    resource_type: "image",
     public_id: (req, file) =>
       file.originalname.split(".")[0] + "-" + Date.now(),
   },
@@ -40,17 +40,24 @@ app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// 📤 사진 업로드
 app.post("/upload", upload.array("photo"), async (req, res) => {
   try {
     const { uid, nickname } = req.body;
     const rawTags = req.body.tags;
     const hashes = JSON.parse(req.body.hashes || "[]");
-    const tags = Array.isArray(rawTags) ? rawTags.join(", ") : rawTags || "";
+    const tags = Array.isArray(rawTags)
+      ? rawTags
+      : typeof rawTags === "string"
+      ? [rawTags]
+      : [];
     const uploadTime = new Date().toISOString();
     const files = req.files;
 
     if (!files || !Array.isArray(files)) {
-      return res.send(`<script>alert("❌ 파일이 업로드되지 않았습니다."); window.location.href="/upload";</script>`);
+      return res.send(
+        `<script>alert("❌ 파일이 업로드되지 않았습니다."); window.location.href="/upload";</script>`
+      );
     }
 
     for (let i = 0; i < files.length; i++) {
@@ -58,22 +65,34 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
       const hash = hashes[i];
 
       if (!hash) {
-        return res.send(`<script>alert("❌ 파일 해시가 누락되었습니다."); window.location.href="/upload";</script>`);
+        return res.send(
+          `<script>alert("❌ 파일 해시가 누락되었습니다."); window.location.href="/upload";</script>`
+        );
       }
 
-      const duplicate = await firestore.collection("photos").where("file_hash", "==", hash).get();
+      const duplicate = await firestore
+        .collection("photos")
+        .where("file_hash", "==", hash)
+        .get();
       if (!duplicate.empty) {
-        return res.send(`<script>alert("❌ 이미 업로드된 이미지입니다."); window.location.href="/upload";</script>`);
+        return res.send(
+          `<script>alert("❌ 이미 업로드된 이미지입니다."); window.location.href="/upload";</script>`
+        );
       }
 
       const imageUrl =
-        typeof file?.secure_url === "string" ? file.secure_url :
-        typeof file?.url === "string" ? file.url :
-        typeof file?.path === "string" ? file.path :
-        "";
+        typeof file?.secure_url === "string"
+          ? file.secure_url
+          : typeof file?.url === "string"
+          ? file.url
+          : typeof file?.path === "string"
+          ? file.path
+          : "";
 
       if (!imageUrl) {
-        return res.send(`<script>alert("❌ 이미지 URL 추출 실패"); window.location.href="/upload";</script>`);
+        return res.send(
+          `<script>alert("❌ 이미지 URL 추출 실패"); window.location.href="/upload";</script>`
+        );
       }
 
       await firestore.collection("photos").add({
@@ -82,27 +101,40 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
         tags,
         upload_time: uploadTime,
         upload_by: uid,
-        uploader_nickname: nickname || "익명"
+        uploader_nickname: nickname || "익명",
       });
     }
 
     res.redirect("/");
   } catch (err) {
     console.error("❌ 서버 오류:", err);
-    res.status(500).send(`<script>alert("❌ 서버 오류 발생: ${err.message}"); window.location.href="/upload";</script>`);
+    res
+      .status(500)
+      .send(
+        `<script>alert("❌ 서버 오류 발생: ${err.message}"); window.location.href="/upload";</script>`
+      );
   }
 });
 
+// 🏠 메인 페이지
 app.get("/", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const pageSize = 19;
   const offset = (page - 1) * pageSize;
+  const tagFilter = req.query.tag || "전체";
 
-  const snapshot = await firestore
-    .collection("photos")
-    .orderBy("upload_time", "desc")
-    .get();
+  // let query = firestore.collection("photos").orderBy("upload_time", "desc");
+  let query;
+  if (tagFilter === "전체") {
+    query = firestore.collection("photos").orderBy("upload_time", "desc");
+  } else {
+    query = firestore
+      .collection("photos")
+      .where("tags", "array-contains", tagFilter);
+  }
 
+
+  const snapshot = await query.get();
   const totalPhotos = snapshot.size;
   const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   const pagedRows = rows.slice(offset, offset + pageSize);
@@ -110,38 +142,46 @@ app.get("/", async (req, res) => {
   const tagsPath = path.join(__dirname, "tags.json");
   const tagData = fs.readFileSync(tagsPath, "utf-8");
   const rawTags = JSON.parse(tagData);
-
-  // 전체 태그 필터 버튼 포함
   const tags = ["전체", ...rawTags];
 
   const filterButtons = tags
     .map(
       (tag) =>
-        `<button class="filter-btn" onclick="filterByTag('${tag}')">${tag}</button>`
+        `<button class="filter-btn${
+          tag === tagFilter ? " active" : ""
+        }" onclick="location.href='/?page=1&tag=${encodeURIComponent(
+          tag
+        )}'">${tag}</button>`
     )
     .join("\n");
 
-  const images = pagedRows
-    .map(
-      (photo) => `
-      <div class="photo-card" data-tags="${photo.tags || ""}" data-doc-id="${
-        photo.id
-      }" data-filepath="${photo.filepath}" onclick="openLightbox('${
-        photo.filepath
-      }', '${photo.id}')">
-        <div class="card-inner">
-          <div class="front"><img src="${photo.filepath}" alt="사진"></div>
-          <div class="back">
-            <p>태그: ${photo.tags || "없음"}</p>
-            <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
-              timeZone: "Asia/Seoul",
-            })}</p>
+    const images = pagedRows
+      .map((photo) => {
+        const tagList = Array.isArray(photo.tags)
+          ? photo.tags
+          : typeof photo.tags === "string"
+          ? [photo.tags]
+          : [];
+
+        return `
+        <div class="photo-card" data-tags="${tagList.join(
+          ", "
+        )}" data-doc-id="${photo.id}" data-filepath="${
+          photo.filepath
+        }" onclick="openLightbox('${photo.filepath}', '${photo.id}')">
+          <div class="card-inner">
+            <div class="front"><img src="${photo.filepath}" alt="사진"></div>
+            <div class="back">
+              <p>태그: ${tagList.join(", ") || "없음"}</p>
+              <p>업로드: ${new Date(photo.upload_time).toLocaleString("ko-KR", {
+                timeZone: "Asia/Seoul",
+              })}</p>
+            </div>
           </div>
         </div>
-      </div>
-    `
-    )
-    .join("\n");
+      `;
+      })
+      .join("\n");
 
   const totalPages = Math.ceil(totalPhotos / pageSize);
   const prevPage = page > 1 ? page - 1 : null;
@@ -151,15 +191,17 @@ app.get("/", async (req, res) => {
     <div style="text-align:center; margin-top:30px;">
       ${
         prevPage
-          ? `<a href="/?page=${prevPage}" style="margin-right:20px;">← 이전</a>`
+          ? `<a href="/?page=${prevPage}&tag=${encodeURIComponent(
+              tagFilter
+            )}" style="margin-right:20px;">← 이전</a>`
           : ""
       }
-      <span id="page-display" style="margin: 0 10px; font-weight:500; cursor:pointer;" onclick="editPageNumber()">
-        ${page} / ${totalPages}
-      </span>
+      <span id="page-display" style="margin: 0 10px; font-weight:500;">${page} / ${totalPages}</span>
       ${
         nextPage
-          ? `<a href="/?page=${nextPage}" style="margin-left:20px;">다음 →</a>`
+          ? `<a href="/?page=${nextPage}&tag=${encodeURIComponent(
+              tagFilter
+            )}" style="margin-left:20px;">다음 →</a>`
           : ""
       }
     </div>
@@ -202,18 +244,6 @@ app.get("/", async (req, res) => {
         <a id="download-btn" href="#" download>⬇ 다운로드</a>
         <button id="delete-btn" style="display:none;">🗑 삭제</button>
       </div>
-
-      <script>
-        function filterByTag(tag) {
-          document.querySelectorAll(".filter-btn").forEach(btn => {
-            btn.classList.toggle("active", btn.textContent === tag);
-          });
-          document.querySelectorAll(".photo-card").forEach(card => {
-            const tags = card.dataset.tags || "";
-            card.style.display = tag === "전체" || tags.includes(tag) ? "block" : "none";
-          });
-        }
-      </script>
     </body>
     </html>
   `;
@@ -221,37 +251,30 @@ app.get("/", async (req, res) => {
   res.send(html);
 });
 
-app.get("/signup", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "signup.html"));
-});
+// 기타 라우트
+app.get("/signup", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "signup.html"))
+);
+app.get("/login", (req, res) => res.redirect("/"));
+app.get("/mypage", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "mypage.html"))
+);
+app.get("/upload", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "upload.html"))
+);
+app.get("/admin", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "admin.html"))
+);
 
-app.get("/login", (req, res) => {
-  res.redirect("/");
-});
-
-app.get("/mypage", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "mypage.html"));
-});
-
-app.get("/upload", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "upload.html"));
-});
-
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-
-// 404 처리 (가장 마지막에)
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
-});
-
-// 500 처리 (에러 핸들러)
+// 404 & 500 에러 핸들링
+app.use((req, res) =>
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"))
+);
 app.use((err, req, res, next) => {
   console.error("🔥 서버 오류 발생:", err);
   res.status(500).sendFile(path.join(__dirname, "public", "500.html"));
 });
 
 app.listen(port, () => {
-  console.log(`🚀 서버 실행 중: http://localhost:${port}`);
+  console.log(`🚀 WebPics 서버 실행 중: http://localhost:${port}`);
 });
