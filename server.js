@@ -130,7 +130,8 @@ app.get("/", async (req, res) => {
   } else {
     query = firestore
       .collection("photos")
-      .where("tags", "array-contains", tagFilter);
+      .where("tags", "array-contains", tagFilter)
+      .orderBy("upload_time", "desc");
   }
 
 
