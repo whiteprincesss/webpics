@@ -10,7 +10,9 @@ const admin = require("firebase-admin");
 const serviceAccount = JSON.parse(
   Buffer.from(process.env.FIREBASE_CONFIG, "base64").toString("utf8")
 );
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 const firestore = admin.firestore();
 
 const app = express();
@@ -38,6 +40,7 @@ app.use(express.static("."));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// 사진 업로드
 app.post("/upload", upload.array("photo"), async (req, res) => {
   try {
     const { uid, nickname } = req.body;
@@ -88,6 +91,7 @@ app.post("/upload", upload.array("photo"), async (req, res) => {
   }
 });
 
+// 메인 페이지
 app.get("/", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const pageSize = 19;
@@ -135,151 +139,145 @@ app.get("/", async (req, res) => {
     .join("\n");
 
   const html = `
-  <!DOCTYPE html>
-  <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <title>WebPics</title>
-    <link rel="stylesheet" href="/style.css" />
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="/auth.js" defer></script>
-    <script src="/lightbox_admin.js" defer></script>
-  </head>
-  <body>
-    <div class="hamburger" onclick="toggleMenu()">☰</div>
-    <div id="menu" class="hamburger-menu">
-      <ul id="menu-items">
-        <li><a href="/login">로그인</a></li>
-        <li><a href="/signup">회원가입</a></li>
-        <li><a href="/mypage">마이페이지</a></li>
-      </ul>
-    </div>
-
-    <div class="container">
-      <h1><a href="/">📸 WebPics 사진 아카이브</a></h1>
-      <div class="filter-bar">
-        <span>🔍 태그 필터:</span>
-        ${filterButtons}
-        <a href="#" class="multi-tag-toggle" onclick="toggleMultiTagForm()">다중태그 검색</a>
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+      <meta charset="UTF-8" />
+      <title>WebPics</title>
+      <link rel="stylesheet" href="/style.css" />
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+      <script src="/auth.js" defer></script>
+      <script src="/lightbox_admin.js" defer></script>
+    </head>
+    <body>
+      <div class="hamburger" onclick="toggleMenu()">☰</div>
+      <div id="menu-panel" class="hamburger-menu">
+        <ul id="menu-items">
+          <li><a href="/login">로그인</a></li>
+          <li><a href="/signup">회원가입</a></li>
+          <li><a href="/mypage">마이페이지</a></li>
+        </ul>
       </div>
 
-      <div id="advanced-filter" style="display:none; margin-top:10px;">
-        <form id="tag-filter-form" class="tag-filter-form" onsubmit="submitTags(event)">
-          ${checkboxes}
-          <button type="submit">적용</button>
-        </form>
-      </div>
+      <div class="container">
+        <h1><a href="/">📸 WebPics 사진 아카이브</a></h1>
 
-      <div class="gallery">
-        <a href="/upload" class="upload-box">+</a>
-        ${pagedRows
-          .map((photo) => {
-            const tagList = Array.isArray(photo.tags)
-              ? photo.tags
-              : [photo.tags];
-            return `
-            <div class="photo-card" data-tags="${tagList.join(
-              ", "
-            )}" data-doc-id="${photo.id}" data-filepath="${photo.filepath}"
-              onclick="openLightbox('${photo.filepath}', '${photo.id}')">
-              <div class="card-inner">
-                <div class="front"><img src="${
-                  photo.filepath
-                }" alt="사진"></div>
-                <div class="back">
-                  <p>태그: ${tagList.join(", ")}</p>
-                  <p>업로드: ${new Date(photo.upload_time).toLocaleString(
-                    "ko-KR",
-                    { timeZone: "Asia/Seoul" }
-                  )}</p>
+        <div class="filter-bar">
+          <span>🔍 태그 필터:</span>
+          ${filterButtons}
+          <a href="#" class="multi-tag-toggle" onclick="toggleMultiTagForm()">다중태그 검색</a>
+        </div>
+
+        <div id="advanced-filter" style="display:none; margin-top:10px;">
+          <form id="tag-filter-form" class="tag-filter-form" onsubmit="submitTags(event)">
+            ${checkboxes}
+            <button type="submit">적용</button>
+          </form>
+        </div>
+
+        <div class="gallery">
+          <a href="/upload" class="upload-box">+</a>
+          ${pagedRows
+            .map((photo) => {
+              const tagList = Array.isArray(photo.tags)
+                ? photo.tags
+                : [photo.tags];
+              return `
+              <div class="photo-card" data-tags="${tagList.join(
+                ", "
+              )}" data-doc-id="${photo.id}" data-filepath="${
+                photo.filepath
+              }" onclick="openLightbox('${photo.filepath}', '${photo.id}')">
+                <div class="card-inner">
+                  <div class="front"><img src="${
+                    photo.filepath
+                  }" alt="사진"></div>
+                  <div class="back">
+                    <p>태그: ${tagList.join(", ")}</p>
+                    <p>업로드: ${new Date(photo.upload_time).toLocaleString(
+                      "ko-KR",
+                      { timeZone: "Asia/Seoul" }
+                    )}</p>
+                  </div>
                 </div>
               </div>
-            </div>`;
-          })
-          .join("")}
+            `;
+            })
+            .join("")}
+        </div>
+
+        <div style="text-align:center; margin-top:30px;">
+          ${
+            page > 1
+              ? `<a href="/?page=${page - 1}&tags=${encodeURIComponent(
+                  tagParam || ""
+                )}" style="margin-right:20px;">← 이전</a>`
+              : ""
+          }
+          <span id="page-display" style="margin: 0 10px; font-weight:500;">${page}</span>
+          ${
+            page < Math.ceil(rows.length / pageSize)
+              ? `<a href="/?page=${page + 1}&tags=${encodeURIComponent(
+                  tagParam || ""
+                )}" style="margin-left:20px;">다음 →</a>`
+              : ""
+          }
+        </div>
+
+        <p style="text-align:center; margin-top:40px; font-size:13px; color:#666;">문의는 @현서내꼬</p>
       </div>
 
-      <div style="text-align:center; margin-top:30px;">
-        ${
-          page > 1
-            ? `<a href="/?page=${page - 1}&tags=${encodeURIComponent(
-                tagParam || ""
-              )}" style="margin-right:20px;">← 이전</a>`
-            : ""
-        }
-        <span id="page-display" style="margin: 0 10px; font-weight:500;">${page}</span>
-        ${
-          page < Math.ceil(rows.length / pageSize)
-            ? `<a href="/?page=${page + 1}&tags=${encodeURIComponent(
-                tagParam || ""
-              )}" style="margin-left:20px;">다음 →</a>`
-            : ""
-        }
-      </div>
-
-      <p style="text-align:center; margin-top:40px; font-size:13px; color:#666;">문의는 @현서내꼬</p>
-    </div>
-
-    <div id="lightbox" onclick="closeLightbox()">
-      <div class="lightbox-content" onclick="event.stopPropagation()">
-        <div class="lightbox-img-wrapper">
+      <div id="lightbox" onclick="closeLightbox()">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
           <img id="lightbox-img" src="" />
-        </div>
-        <div class="lightbox-info">
-          <p id="lightbox-tags"></p>
-          <a id="download-btn" href="#" download>⬇ 다운로드</a>
-          <button id="delete-btn" style="display:none;">🗑 삭제</button>
+          <div id="lightbox-info">
+            <p id="lightbox-tags">📎 태그: 없음</p>
+            <div class="lightbox-buttons">
+              <a id="download-btn" href="#" download>⬇ 다운로드</a>
+              <button id="delete-btn" style="display:none;">🗑 삭제</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <script>
-      function toggleMenu() {
-        const menu = document.getElementById("menu");
-        menu.style.display = menu.style.display === "block" ? "none" : "block";
-      }
+      <script>
+        function toggleMenu() {
+          const menu = document.getElementById("menu");
+          menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
 
-      function toggleMultiTagForm() {
-        const adv = document.getElementById("advanced-filter");
-        adv.style.display = adv.style.display === "none" ? "block" : "none";
-      }
+        // 바깥 누르면 닫히게
+        window.addEventListener("click", function(e) {
+          const menu = document.getElementById("menu-panel");
+          const burger = document.querySelector(".hamburger");
+          if (!menu.contains(e.target) && !burger.contains(e.target)) {
+            menu.style.display = "none";
+          }
+        });
 
-      function submitTags(e) {
-        e.preventDefault();
-        const selected = [...document.querySelectorAll("input[name='tags']:checked")]
-          .map(cb => cb.value)
-          .join(",");
-        location.href = '/?tags=' + encodeURIComponent(selected);
-      }
+        function toggleMultiTagForm() {
+          const adv = document.getElementById("advanced-filter");
+          adv.style.display = adv.style.display === "none" ? "block" : "none";
+        }
 
-      function openLightbox(src, docId) {
-        const lightbox = document.getElementById("lightbox");
-        const img = document.getElementById("lightbox-img");
-        const tags = document.getElementById("lightbox-tags");
-        const downloadBtn = document.getElementById("download-btn");
-
-        img.src = src;
-        downloadBtn.href = src;
-
-        const card = document.querySelector(\`[data-doc-id="\${docId}"]\`);
-        const tagText = card?.getAttribute("data-tags") || "태그 없음";
-        tags.textContent = "📎 태그: " + tagText;
-
-        lightbox.classList.add("show");
-      }
-
-      function closeLightbox() {
-        document.getElementById("lightbox").classList.remove("show");
-      }
-    </script>
-  </body>
-  </html>`;
+        function submitTags(e) {
+          e.preventDefault();
+          const selected = [...document.querySelectorAll("input[name='tags']:checked")]
+            .map(cb => cb.value)
+            .join(",");
+          location.href = '/?tags=' + encodeURIComponent(selected);
+        }
+      </script>
+    </body>
+    </html>
+  `;
 
   res.send(html);
 });
 
+// 라우팅
 app.get("/signup", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "signup.html"))
 );
@@ -294,6 +292,7 @@ app.get("/admin", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "admin.html"))
 );
 
+// 에러 처리
 app.use((req, res) =>
   res.status(404).sendFile(path.join(__dirname, "public", "404.html"))
 );
@@ -302,6 +301,7 @@ app.use((err, req, res, next) => {
   res.status(500).sendFile(path.join(__dirname, "public", "500.html"));
 });
 
+// 서버 실행
 app.listen(port, () => {
   console.log(`🚀 WebPics 서버 실행 중: http://localhost:${port}`);
 });

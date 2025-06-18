@@ -5,6 +5,7 @@ body {
   padding: 20px;
 }
 
+/* ----- 기본 컨테이너 ----- */
 .container {
   max-width: 960px;
   margin: 60px auto;
@@ -28,6 +29,7 @@ h1 a:hover {
   color: inherit;
 }
 
+/* ----- 필터 버튼 ----- */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -35,7 +37,6 @@ h1 a:hover {
   gap: 10px;
   margin-bottom: 20px;
 }
-
 .filter-btn {
   padding: 6px 12px;
   border-radius: 20px;
@@ -55,6 +56,7 @@ h1 a:hover {
   font-weight: bold;
 }
 
+/* 다중 태그 필터 버튼 */
 .multi-tag-toggle {
   padding: 6px 12px;
   background-color: #eef2ff;
@@ -69,6 +71,7 @@ h1 a:hover {
   background-color: #dbe3ff;
 }
 
+/* 태그 필터 폼 */
 .tag-filter-form {
   display: flex;
   flex-wrap: wrap;
@@ -85,7 +88,6 @@ h1 a:hover {
   font-size: 13px;
   color: #333;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
 }
 .tag-filter-form label:hover {
   background-color: #dce3ff;
@@ -102,12 +104,12 @@ h1 a:hover {
   cursor: pointer;
   font-size: 13px;
   font-weight: bold;
-  transition: background-color 0.2s ease;
 }
 .tag-filter-form button:hover {
   background-color: #3c65d1;
 }
 
+/* ----- 사진 카드 ----- */
 .gallery {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -115,7 +117,6 @@ h1 a:hover {
   justify-items: center;
   margin-top: 30px;
 }
-
 .photo-card {
   width: 180px;
   height: 180px;
@@ -160,6 +161,7 @@ h1 a:hover {
   text-align: center;
 }
 
+/* ----- 업로드 버튼 ----- */
 .upload-box {
   width: 180px;
   height: 180px;
@@ -178,6 +180,7 @@ h1 a:hover {
   color: #000;
 }
 
+/* ----- 햄버거 메뉴 ----- */
 .hamburger {
   position: fixed;
   top: 20px;
@@ -187,6 +190,7 @@ h1 a:hover {
   z-index: 1001;
 }
 .hamburger-menu {
+  display: none;
   position: fixed;
   top: 60px;
   right: 20px;
@@ -194,8 +198,10 @@ h1 a:hover {
   border: 1px solid #ccc;
   border-radius: 6px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  display: none;
   z-index: 1000;
+}
+.hamburger-menu.show {
+  display: block;
 }
 .hamburger-menu ul {
   list-style: none;
@@ -215,7 +221,35 @@ h1 a:hover {
   font-weight: 500;
 }
 
-/* ✅ Lightbox 스타일 */
+/* ----- 로그인한 유저 메뉴 ----- */
+.menu-user {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 6px;
+  padding-left: 8px;
+}
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.menu-btn {
+  padding: 8px 12px;
+  background-color: #4f7cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+.menu-btn:hover {
+  background-color: #3c65d1;
+}
+
+/* ----- Lightbox (사진 확대) ----- */
 #lightbox {
   display: none;
   position: fixed;
@@ -234,66 +268,54 @@ h1 a:hover {
   display: flex;
   background: white;
   border-radius: 12px;
-  max-width: 90vw;
+  max-width: 95vw;
   max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 0 20px rgba(0,0,0,0.3);
 }
-.lightbox-img-wrapper {
-  flex: 1 1 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+#lightbox-img {
+  max-width: 60vw;
+  max-height: 90vh;
+  object-fit: contain;
   background: #f4f4f4;
 }
-.lightbox-img-wrapper img {
-  max-width: 100%;
-  max-height: 85vh;
-  object-fit: contain;
-}
-.lightbox-info {
-  flex: 0 0 200px;
+#lightbox-info {
   padding: 16px;
+  width: 160px; /* 👈 기존보다 좁게 줄이기 (기존 200px → 160px 또는 140px 추천) */
+  background: #fafafa;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center; /* 👈 왼쪽 정렬 대신 가운데 정렬 */
   gap: 12px;
-  background: #fafafa;
-  font-size: 14px;
-  color: #333;
-}
-#lightbox-tags {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: #555;
-}
-#download-btn {
-  font-size: 14px;
-  background: #4f7cff;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 6px;
-  text-decoration: none;
-  text-align: center;
-  width: auto;
-  min-width: 120px;
-}
-#delete-btn {
-  font-size: 14px;
-  background: #ff5c5c;
-  color: white;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
 }
 #lightbox-tags {
   font-size: 13px;
   color: #666;
-  margin: 8px 0 4px;
+  margin-bottom: 10px;
 }
+#download-btn, #delete-btn {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-align: center;
+  text-decoration: none;
+  width: 100%;
+}
+#download-btn {
+  background: #4f7cff;
+  color: white;
+}
+#delete-btn {
+  background: #ff5f5f;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* ----- 반응형 ----- */
 @media (max-width: 768px) {
   .container {
     margin: 20px auto;
@@ -334,21 +356,19 @@ h1 a:hover {
     align-items: flex-start;
   }
 
-  #lightbox img {
-    max-width: 90%;
-    max-height: 60%;
+  #lightbox-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #lightbox-img {
+    max-width: 90vw;
+    max-height: 60vh;
   }
 
   #lightbox-info {
-    max-width: 90%;
-    font-size: 13px;
-    margin-top: 14px;
-  }
-
-  #download-btn,
-  #delete-btn {
-    margin-top: 12px;
-    padding: 8px 12px;
-    font-size: 14px;
+    width: 100%;
+    padding: 16px;
+    align-items: center;
   }
 }
