@@ -17,77 +17,23 @@ body {
 h1 {
   font-size: 24px;
   margin-bottom: 24px;
-  color: #333; /* 밑줄 제거 */
+  color: #333;
 }
-
 h1 a {
-  color: inherit;          /* 부모(h1)의 색상 그대로 사용 */
-  text-decoration: none;   /* 밑줄 제거 */
+  color: inherit;
+  text-decoration: none;
 }
-
-
 h1 a:hover {
   text-decoration: none;
   color: inherit;
 }
 
-.navbar {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
-.menu-icon {
-  font-size: 24px;
-  cursor: pointer;
-}
-
-#menu-panel {
-  display: none;
-  position: absolute;
-  top: 36px;
-  right: 0;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  padding: 12px;
-  width: 160px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-#menu-panel.show {
-  display: block;
-}
-
-#menu-panel button {
-  background-color: transparent;
-  border: none;
-  color: #333;
-  text-align: left;
-  width: 100%;
-  padding: 8px;
-  border-radius: 6px;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-#menu-panel button:hover {
-  background-color: #f2f2f2;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.tag-filter {
+.filter-bar {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 24px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .filter-btn {
@@ -97,55 +43,69 @@ h1 a:hover {
   border: 1px solid #ccc;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.2s ease;
   min-width: 80px;
   text-align: center;
-  display: inline-block;
+  transition: background-color 0.2s ease;
 }
-
 .filter-btn:hover {
   background-color: #ddd;
 }
-
 .filter-btn.active {
   background-color: #d0d4ff;
   font-weight: bold;
 }
 
-.tag-list {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.tag-list label {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+.multi-tag-toggle {
+  padding: 6px 12px;
   background-color: #eef2ff;
   border-radius: 20px;
-  padding: 6px 10px;
+  text-decoration: none;
+  font-size: 13px;
+  color: #333;
+  border: 1px solid #ccd6f6;
+  transition: background-color 0.2s ease;
+}
+.multi-tag-toggle:hover {
+  background-color: #dbe3ff;
+}
+
+.tag-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.tag-filter-form label {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: #eef2ff;
+  border: 1px solid #ccd6f6;
+  border-radius: 20px;
   font-size: 13px;
   color: #333;
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
-  white-space: nowrap;
-  max-width: 140px;
-  text-align: left;
 }
-
-.tag-list label:hover {
-  background-color: #dbe4ff;
+.tag-filter-form label:hover {
+  background-color: #dce3ff;
 }
-
-.tag-list input[type="checkbox"] {
+.tag-filter-form input[type="checkbox"] {
   margin-right: 6px;
 }
-
-.upload-footer {
-  margin-top: 16px;
-  text-align: right;
+.tag-filter-form button {
+  padding: 8px 14px;
+  border: none;
+  background-color: #4f7cff;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+.tag-filter-form button:hover {
+  background-color: #3c65d1;
 }
 
 .gallery {
@@ -162,7 +122,6 @@ h1 a:hover {
   perspective: 1000px;
   cursor: pointer;
 }
-
 .card-inner {
   position: relative;
   width: 100%;
@@ -170,11 +129,9 @@ h1 a:hover {
   transition: transform 0.6s;
   transform-style: preserve-3d;
 }
-
 .photo-card.flipped .card-inner {
   transform: rotateY(180deg);
 }
-
 .front, .back {
   position: absolute;
   width: 100%;
@@ -184,18 +141,12 @@ h1 a:hover {
   backface-visibility: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-
-.front {
-  background: #fff;
-}
-
 .front img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   background-color: #fefefe;
 }
-
 .back {
   background: #f8f8f8;
   transform: rotateY(180deg);
@@ -222,12 +173,49 @@ h1 a:hover {
   justify-content: center;
   text-decoration: none;
 }
-
 .upload-box:hover {
   background-color: #e0e0e0;
   color: #000;
 }
 
+.hamburger {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  font-size: 26px;
+  cursor: pointer;
+  z-index: 1001;
+}
+.hamburger-menu {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  display: none;
+  z-index: 1000;
+}
+.hamburger-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.hamburger-menu li {
+  padding: 10px 20px;
+  border-bottom: 1px solid #eee;
+}
+.hamburger-menu li:last-child {
+  border-bottom: none;
+}
+.hamburger-menu a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+/* ✅ Lightbox 스타일 */
 #lightbox {
   display: none;
   position: fixed;
@@ -238,160 +226,71 @@ h1 a:hover {
   z-index: 2000;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
 }
-
 #lightbox.show {
   display: flex;
 }
-
-#lightbox img {
-  max-width: 80%;
-  max-height: 80%;
-  border-radius: 12px;
-  box-shadow: 0 0 16px rgba(0,0,0,0.3);
-}
-
-#download-btn {
-  margin-top: 20px;
-  font-size: 18px;
+.lightbox-content {
+  display: flex;
   background: white;
-  color: #333;
-  padding: 10px 16px;
-  border-radius: 8px;
-  text-decoration: none;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.auth-container {
-  max-width: 400px;
-  margin: 80px auto;
-  padding: 24px;
-  background: #fff;
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
 }
-
-.auth-container h1 {
-  font-size: 26px;
-  margin-bottom: 24px;
+.lightbox-img-wrapper {
+  flex: 1 1 auto;
   display: flex;
-  align-items: center;
-  gap: 10px;
   justify-content: center;
+  align-items: center;
+  background: #f4f4f4;
 }
-
-.auth-form {
+.lightbox-img-wrapper img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+}
+.lightbox-info {
+  flex: 0 0 200px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
   gap: 12px;
-  max-width: 320px;
-  margin: 0 auto;
+  background: #fafafa;
+  font-size: 14px;
+  color: #333;
 }
-
-.auth-form input {
-  padding: 10px;
-  font-size: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-
-.auth-form button {
-  padding: 10px;
-  background-color: #4f7cff;
-  color: white;
-  font-size: 15px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.auth-form button:hover {
-  background-color: #3c65d1;
-}
-
-.auth-form p {
-  font-size: 13px;
+#lightbox-tags {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
   color: #555;
-  text-align: center;
 }
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  background: #fff;
-  border-bottom: 1px solid #ddd;
-}
-
-.logo {
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.header-buttons button {
-  margin-left: 12px;
+#download-btn {
+  font-size: 14px;
+  background: #4f7cff;
+  color: white;
   padding: 8px 14px;
   border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-}
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin-top: 30px;
-  font-size: 15px;
-  flex-wrap: wrap;
-}
-
-.pagination a {
   text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 8px;
-  background-color: #f0f0f0;
-  color: #333;
-  transition: all 0.2s ease-in-out;
-  font-weight: bold;
-  border: 1px solid #ccc;
+  text-align: center;
+  width: auto;
+  min-width: 120px;
 }
-
-.pagination a:hover {
-  background-color: #dce0ff;
-  color: #000;
-}
-
-.pagination .current-page {
-  font-weight: bold;
-  padding: 6px 12px;
-  background-color: #4f7cff;
+#delete-btn {
+  font-size: 14px;
+  background: #ff5c5c;
   color: white;
-  border-radius: 8px;
-}
-
-.page-jump-form {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.page-jump-form input {
-  width: 60px;
-  padding: 4px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.page-jump-form button {
-  padding: 4px 10px;
-  border-radius: 6px;
-  background-color: #4f7cff;
-  color: white;
+  padding: 8px 14px;
   border: none;
+  border-radius: 6px;
   cursor: pointer;
+}
+#lightbox-tags {
+  font-size: 13px;
+  color: #666;
+  margin: 8px 0 4px;
 }
