@@ -1,4 +1,4 @@
-// 🔐 Firebase 초기화
+// ✅ Firebase 초기화 먼저
 const firebaseConfig = {
   apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
   authDomain: "webpics-b2443.firebaseapp.com",
@@ -8,14 +8,11 @@ const firebaseConfig = {
   appId: "1:996418354850:web:86f4484bf0a732b7d761fb",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ✅ 구글 로그인
+// ✅ Google 로그인
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth
@@ -65,7 +62,7 @@ function setNickname() {
     });
 }
 
-// ✅ 메뉴 렌더링
+// ✅ 로그인 상태에 따라 햄버거 메뉴 렌더링
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     const menu = document.getElementById("menu-panel");
@@ -78,17 +75,23 @@ document.addEventListener("DOMContentLoaded", () => {
           .get()
           .then((doc) => {
             if (doc.exists && doc.data().nickname) {
+              const isAdmin = doc.data().role === "admin";
               menu.innerHTML = `
-                <div class="menu-user">👤 ${doc.data().nickname}님</div>
-                <div class="menu-actions">
-                  <a href="/mypage" class="menu-btn">마이페이지</a>
-                  <button class="menu-btn" onclick="logout()">로그아웃</button>
-                </div>
-              `;
+              <div class="menu-user">${doc.data().nickname}님</div>
+              <div class="menu-actions">
+                <a href="/mypage" class="menu-btn">마이페이지</a>
+                ${
+                  isAdmin
+                    ? `<a href="/admin" class="menu-btn">관리자 페이지</a>`
+                    : ""
+                }
+                <button class="menu-btn" onclick="logout()">로그아웃</button>
+              </div>
+            `;
             }
           });
       } else {
-        menu.innerHTML = `<button onclick="signInWithGoogle()">Google 로그인</button>`;
+        menu.innerHTML = `<button class="menu-btn" onclick="signInWithGoogle()">Google 로그인</button>`;
       }
     });
   }, 100);

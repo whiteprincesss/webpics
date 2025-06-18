@@ -279,16 +279,24 @@ h1 a:hover {
   object-fit: contain;
   background: #f4f4f4;
 }
-#lightbox-info {
-  padding: 16px;
-  width: 160px; /* 👈 기존보다 좁게 줄이기 (기존 200px → 160px 또는 140px 추천) */
-  background: #fafafa;
+.lightbox-info {
+  flex: 0 0 220px; /* 너비 고정 */
+  padding: 24px;
+  margin-right: 16px;         /* ✅ 오른쪽 여백 */
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center; /* 👈 왼쪽 정렬 대신 가운데 정렬 */
-  gap: 12px;
+  justify-content: center;    /* ✅ 수직 가운데 정렬 */
+  align-items: center;        /* ✅ 수평 가운데 정렬 */
+  gap: 14px;                  /* 요소 간 여백 */
+  background: #fafafa;
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+  text-align: center;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
+
 #lightbox-tags {
   font-size: 13px;
   color: #666;

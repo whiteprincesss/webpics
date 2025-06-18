@@ -25,6 +25,7 @@
   <div class="container">
     <h1>마이페이지</h1>
     <p id="nickname">닉네임: </p>
+
     <h2 style="margin-top:30px;">내가 올린 사진</h2>
     <div class="gallery" id="my-photos"></div>
     <p style="margin-top:30px;"><a href="/">← 메인으로 돌아가기</a></p>
@@ -59,7 +60,7 @@
           <div class="card-inner">
             <div class="front"><img src="${data.filepath}" alt="photo"></div>
             <div class="back">
-              <p>태그: ${data.tags || '없음'}</p>
+              <p>태그: ${Array.isArray(data.tags) ? data.tags.join(", ") : data.tags || "없음"}</p>
               <p>업로드: ${new Date(data.upload_time).toLocaleString("ko-KR")}</p>
               <a href="${data.filepath}" download>⬇ 다운로드</a>
               ${isAdmin ? `<button onclick="deletePhoto('${doc.id}')">🗑 삭제</button>` : ""}

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>관리자 페이지 - WebPics</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>🛠 관리자 대시보드</h1>
+
+    <ul id="admin-stats" style="font-size: 15px; line-height: 1.8;"></ul>
+
+    <hr style="margin: 30px 0;" />
+
+    <h2>📷 전체 사진 목록</h2>
+    <div id="admin-gallery" class="gallery"></div>
+
+    <p style="text-align:center; margin-top:30px;"><a href="/">← 메인으로 돌아가기</a></p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBMlsw1GCv2igg73oGrolGqcQVTIgHsyE",
+      authDomain: "webpics-b2443.firebaseapp.com",
+      projectId: "webpics-b2443",
+      storageBucket: "webpics-b2443.appspot.com",
+      messagingSenderId: "996418354850",
+      appId: "1:996418354850:web:86f4484bf0a732b7d761fb"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return location.href = "/";
+
+      const doc = await db.collection("users").doc(user.uid).get();
+      if (!doc.exists || doc.data().role !== "admin") {
+        alert("관리자만 접근 가능합니다.");
+        return location.href = "/";
+      }
+
+      // 📊 통계
+      const statsList = document.getElementById("admin-stats");
+
+      const usersSnap = await db.collection("users").get();
+      const userCount = usersSnap.size;
+
+      const photoSnap = await db.collection("photos").get();
+      const photoCount = photoSnap.size;
+
+      const tagCountMap = {};
+      const tagsRes = await fetch("/tags.json");
+      const tagList = await tagsRes.json();
+      for (const tag of tagList) tagCountMap[tag] = 0;
+
+      photoSnap.forEach(doc => {
+        const data = doc.data();
+        const tags = Array.isArray(data.tags) ? data.tags : [data.tags];
+        tags.forEach(tag => {
+          if (tagCountMap[tag] != null) tagCountMap[tag]++;
+        });
+      });
+
+      statsList.innerHTML = `
+        <li>👥 전체 유저 수: <strong>${userCount}</strong>명</li>
+        <li>🖼 전체 사진 수: <strong>${photoCount}</strong>장</li>
+        <li>🏷 태그별 사진 수:
+          <ul style="margin-top: 5px; padding-left: 20px;">
+            ${Object.entries(tagCountMap)
+              .map(([tag, count]) => `<li>${tag}: ${count}장</li>`)
+              .join("")}
+          </ul>
+        </li>
+      `;
+
+      // 📷 사진 목록 표시
+      const gallery = document.getElementById("admin-gallery");
+      photoSnap.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "photo-card";
+        div.innerHTML = `
+          <div class="card-inner">
+            <div class="front"><img src="${data.filepath}" alt="사진"></div>
+            <div class="back">
+              <p>태그: ${Array.isArray(data.tags) ? data.tags.join(", ") : data.tags}</p>
+              <p>업로더: ${data.uploader_nickname || "익명"}</p>
+              <button onclick="deletePhoto('${doc.id}')">🗑 삭제</button>
+            </div>
+          </div>
+        `;
+        gallery.appendChild(div);
+      });
+    });
+
+    function deletePhoto(docId) {
+      if (confirm("정말 삭제하시겠습니까?")) {
+        firebase.firestore().collection("photos").doc(docId).delete()
+          .then(() => {
+            alert("삭제되었습니다.");
+            location.reload();
+          });
+      }
+    }
+  </script>
+</body>
+</html>
